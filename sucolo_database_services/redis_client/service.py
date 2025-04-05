@@ -1,8 +1,12 @@
 from redis import Redis
 
-from src.redis_client.keys_manager import RedisKeysManager
-from src.redis_client.read_repository import RedisReadRepository
-from src.redis_client.write_repository import RedisWriteRepository
+from sucolo_database_services.redis_client.keys_manager import RedisKeysManager
+from sucolo_database_services.redis_client.read_repository import (
+    RedisReadRepository,
+)
+from sucolo_database_services.redis_client.write_repository import (
+    RedisWriteRepository,
+)
 
 
 class RedisService:

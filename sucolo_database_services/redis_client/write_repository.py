@@ -2,8 +2,8 @@ import geopandas as gpd
 from redis import Redis
 from redis.typing import ResponseT
 
-from src.redis_client.consts import HEX_SUFFIX, POIS_SUFFIX
-from src.utils.polygons2hexagons import polygons2hexagons
+from sucolo_database_services.redis_client.consts import HEX_SUFFIX, POIS_SUFFIX
+from sucolo_database_services.utils.polygons2hexagons import polygons2hexagons
 
 
 class RedisWriteRepository:

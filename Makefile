@@ -1,18 +1,18 @@
 isort:
-	python -m isort src
+	poetry run isort sucolo_database_services
 
 black:
-	python -m black --config .black.cfg src
+	poetry run black --config .black.cfg sucolo_database_services
 
 flake8:
-	python -m flake8 src
+	poetry run flake8 sucolo_database_services
 
 format: isort black
 
 mypy:
-	python -m mypy --incremental --install-types --show-error-codes --pretty src
+	poetry run mypy --incremental --install-types --show-error-codes --pretty sucolo_database_services
 
 test:
-	python -m pytest src
+	poetry run pytest sucolo_database_services
 
 build: isort black flake8 mypy test

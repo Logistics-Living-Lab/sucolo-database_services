@@ -1,7 +1,7 @@
 from redis import Redis
 
-from src.redis_client.consts import HEX_SUFFIX, POIS_SUFFIX
-from src.redis_client.utils import check_if_keys_exist
+from sucolo_database_services.redis_client.consts import HEX_SUFFIX, POIS_SUFFIX
+from sucolo_database_services.redis_client.utils import check_if_keys_exist
 
 
 class RedisReadRepository:

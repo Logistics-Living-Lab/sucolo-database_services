@@ -3,7 +3,7 @@ from typing import Any, Iterator
 import geopandas as gpd
 from elasticsearch import Elasticsearch, helpers
 
-from src.utils.polygons2hexagons import polygons2hexagons
+from sucolo_database_services.utils.polygons2hexagons import polygons2hexagons
 
 
 class ElasticsearchWriteRepository:

@@ -2,9 +2,13 @@ from typing import Any
 
 from elasticsearch import Elasticsearch
 
-from src.elasticsearch_client.index_manager import ElasticsearchIndexManager
-from src.elasticsearch_client.read_repository import ElasticsearchReadRepository
-from src.elasticsearch_client.write_repository import (
+from sucolo_database_services.elasticsearch_client.index_manager import (
+    ElasticsearchIndexManager,
+)
+from sucolo_database_services.elasticsearch_client.read_repository import (
+    ElasticsearchReadRepository,
+)
+from sucolo_database_services.elasticsearch_client.write_repository import (
     ElasticsearchWriteRepository,
 )
 

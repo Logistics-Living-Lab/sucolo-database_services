@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "sucolo-database-services"
+name = "sucolo_database_services"
 version = "0.1.0"
 description = ""
 authors = ["Stanislaw Straburzynski <sstraburzynski@gmail.com>"]
 readme = "README.md"
-packages = [{include = "src"}]
+packages = [{include = "sucolo_database_services"}]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.12"
