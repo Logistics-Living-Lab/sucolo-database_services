@@ -32,6 +32,9 @@ pytest = "^8.3.5"
 types-shapely = "^2.0.0.20250326"
 types-pyopenssl = "^24.1.0.20240722"
 types-openpyxl = "^3.1.5.20250306"
+build = "^1.2.2.post1"
+setuptools-scm = {extras = ["toml"], version = "^8.2.0"}
+poetry-core = "^2.1.2"
 
 [tool.black]
 line-length = 80
@@ -71,3 +74,10 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::UserWarning",
 ]
+
+[build-system]
+requires = [
+    "wheel",
+    "setuptools-scm[toml]>=8.0",
+]
+build-backend = "setuptools.build_meta"
