@@ -5,26 +5,34 @@ from sucolo_database_services.redis_client.utils import check_if_keys_exist
 
 
 class RedisReadRepository:
-    def __init__(self, redis_client: Redis, city: str):
+    def __init__(self, redis_client: Redis):
         self.redis_client = redis_client
-        self.city = city
 
-    def count_records_per_key(self) -> dict[str, int]:
+    def get_hexagons(self, city: str) -> list[str]:
+        hex_ids = [
+            hex_id.decode("utf-8")
+            for hex_id in self.redis_client.zrange(
+                city + HEX_SUFFIX, 0, -1)
+        ]
+        return hex_ids
+
+    def count_records_per_key(self, city: str) -> dict[str, int]:
         result = {}
         for key in self.redis_client.keys("*"):  # type: ignore[union-attr]
-            if self.city in key:
+            if city in key:
                 result[key] = self.redis_client.zcard(key)
         return result  # type: ignore[return-value]
 
     def nearest_pois_to_hex_centers(
         self,
+        city: str,
         amenity: str,
         radius: int = 300,
         unit: str = "m",
         count: int | None = 1,
     ) -> dict[str, list[dict[str, float]]]:
-        hex_key = self.city + HEX_SUFFIX
-        pois_key = self.city + "_" + amenity + POIS_SUFFIX
+        hex_key = city + HEX_SUFFIX
+        pois_key = city + "_" + amenity + POIS_SUFFIX
         check_if_keys_exist(client=self.redis_client, keys=[hex_key, pois_key])
 
         hex_ids = self.redis_client.zrange(hex_key, 0, -1)
@@ -41,6 +49,7 @@ class RedisReadRepository:
             count=count,
         )
         processed_pois = self._pois_postprocessing(
+            city=city,
             nearest_pois=nearest_pois,
             hex_ids=hex_ids,  # type: ignore[arg-type]
         )
@@ -83,6 +92,7 @@ class RedisReadRepository:
 
     def _pois_postprocessing(
         self,
+        city: str,
         nearest_pois: list[list[tuple[bytes, float]]],
         hex_ids: list[bytes],
     ) -> dict[str, list[dict[str, float]]]:

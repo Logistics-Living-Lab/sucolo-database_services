@@ -7,12 +7,12 @@ from sucolo_database_services.utils.polygons2hexagons import polygons2hexagons
 
 
 class ElasticsearchWriteRepository:
-    def __init__(self, es_client: Elasticsearch, index_name: str):
+    def __init__(self, es_client: Elasticsearch):
         self.es = es_client
-        self.index_name = index_name
 
     def upload_pois(
         self,
+        index_name: str,
         gdf: gpd.GeoDataFrame,
         extra_features: list[str] = [],
     ) -> None:
@@ -31,13 +31,14 @@ class ElasticsearchWriteRepository:
             self.es,
             actions=doc_stream(),
             chunk_size=1000,
-            index=self.index_name,
+            index=index_name,
         ):
             if not status_ok:
                 print(response)
 
     def upload_districts(
         self,
+        index_name: str,
         gdf: gpd.GeoDataFrame,
     ) -> None:
         gdf["polygon"] = gdf["geometry"].apply(lambda g: g.wkt)
@@ -49,10 +50,11 @@ class ElasticsearchWriteRepository:
                 yield row_dict
 
         for doc in doc_stream():
-            self.es.index(index=self.index_name, body=doc)
+            self.es.index(index=index_name, body=doc)
 
     def upload_hex_centers(
         self,
+        index_name: str,
         districts: gpd.GeoDataFrame,
         hex_resolution: int,
         extra_features: list[str] = [],
@@ -79,7 +81,7 @@ class ElasticsearchWriteRepository:
             self.es,
             actions=doc_stream(),
             chunk_size=1000,
-            index=self.index_name,
+            index=index_name,
         ):
             if not status_ok:
                 print(response)

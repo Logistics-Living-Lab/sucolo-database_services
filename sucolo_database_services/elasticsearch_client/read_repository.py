@@ -2,16 +2,17 @@ from elasticsearch import Elasticsearch
 
 
 class ElasticsearchReadRepository:
-    def __init__(self, es_client: Elasticsearch, index_name: str):
+    def __init__(self, es_client: Elasticsearch):
         self.es = es_client
-        self.index_name = index_name
 
     def get_pois(
         self,
+        index_name: str,
         features: list[str] = [],
         only_location: bool = False,
     ) -> dict[str, dict[str, str | int | float]]:
         return self._get_geopoints(
+            index_name=index_name,
             id_name=None,
             type_name="poi",
             features=features,
@@ -20,10 +21,12 @@ class ElasticsearchReadRepository:
 
     def get_hexagons(
         self,
+        index_name: str,
         features: list[str] = [],
         only_location: bool = False,
     ) -> dict[str, dict[str, str | int | float]]:
         return self._get_geopoints(
+            index_name=index_name,
             id_name="hex_id",
             type_name="hex_center",
             features=features,
@@ -32,10 +35,12 @@ class ElasticsearchReadRepository:
 
     def get_districts(
         self,
+        index_name: str,
         features: list[str] = [],
         only_polygon: bool = False,
     ) -> dict[str, dict[str, str | int | float]]:
         return self._get_geopolygons(
+            index_name=index_name,
             id_name="name",
             type_name="district",
             features=features,
@@ -44,6 +49,7 @@ class ElasticsearchReadRepository:
 
     def _get_geopoints(
         self,
+        index_name: str,
         type_name: str,
         id_name: str | None = None,
         features: list[str] = [],
@@ -54,6 +60,7 @@ class ElasticsearchReadRepository:
             features = ["location"]
 
         return self._query(
+            index_name=index_name,
             id_name=id_name,
             type_name=type_name,
             features=features,
@@ -62,6 +69,7 @@ class ElasticsearchReadRepository:
 
     def _get_geopolygons(
         self,
+        index_name: str,
         type_name: str,
         id_name: str | None = None,
         features: list[str] = [],
@@ -72,6 +80,7 @@ class ElasticsearchReadRepository:
             features = ["polygon"]
 
         return self._query(
+            index_name=index_name,
             id_name=id_name,
             type_name=type_name,
             features=features,
@@ -80,6 +89,7 @@ class ElasticsearchReadRepository:
 
     def _query(
         self,
+        index_name: str,
         type_name: str,
         id_name: str | None = None,
         features: list[str] = [],
@@ -93,7 +103,7 @@ class ElasticsearchReadRepository:
         if len(features) == 0:
             query.pop("_source")
 
-        response = self.es.search(index=self.index_name, body=query)
+        response = self.es.search(index=index_name, body=query)
 
         hits = response["hits"]["hits"]
         if id_name:

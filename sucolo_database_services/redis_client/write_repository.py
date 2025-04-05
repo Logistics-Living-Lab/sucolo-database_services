@@ -7,12 +7,12 @@ from sucolo_database_services.utils.polygons2hexagons import polygons2hexagons
 
 
 class RedisWriteRepository:
-    def __init__(self, redis_client: Redis, city: str) -> None:
+    def __init__(self, redis_client: Redis) -> None:
         self.redis_client = redis_client
-        self.city = city
 
     def upload_pois_by_amenity_key(
         self,
+        city: str,
         pois: gpd.GeoDataFrame,
         only_wheelchair_accessible: bool = False,
         wheelchair_positive_values: list[str] = ["yes"],
@@ -30,7 +30,7 @@ class RedisWriteRepository:
         for amenity in pois["amenity"].unique():
             pois[pois["amenity"] == amenity].apply(
                 lambda row: pipe.geoadd(
-                    self.city + "_" + amenity + wheelchair_suffix + POIS_SUFFIX,
+                    city + "_" + amenity + wheelchair_suffix + POIS_SUFFIX,
                     [row["geometry"].x, row["geometry"].y, row.name],
                 ),
                 axis=1,
@@ -40,7 +40,7 @@ class RedisWriteRepository:
         return responses  # type: ignore[no-any-return]
 
     def upload_hex_centers(
-        self, districts: gpd.GeoDataFrame, resolution: int = 9
+        self, city: str, districts: gpd.GeoDataFrame, resolution: int = 9
     ) -> ResponseT:
         hex_centers = polygons2hexagons(districts, resolution=resolution)
         assert len(hex_centers) > 0, "No hexagons were returned."
@@ -50,7 +50,7 @@ class RedisWriteRepository:
             for hex_id, hex_center in district_hex_centers:
                 values += [hex_center.x, hex_center.y, hex_id]
 
-        response = self.redis_client.geoadd(self.city + HEX_SUFFIX, values)
+        response = self.redis_client.geoadd(city + HEX_SUFFIX, values)
         return response
 
 

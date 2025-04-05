@@ -21,34 +21,33 @@ class ElasticsearchIndexManager:
     def __init__(
         self,
         es_client: Elasticsearch,
-        index_name: str,
-        mapping: dict[str, Any] = default_mapping,
     ) -> None:
         self.es = es_client
-        self.index_name = index_name
-        self.mapping = mapping
 
     def create_index(
         self,
+        index_name: str,
         ignore_if_exists: bool = False,
+        mapping: dict[str, Any] = default_mapping,
     ) -> None:
-        if self.es.indices.exists(index=self.index_name):
-            msg = f'Index "{self.index_name}" already exists.'
+        if self.es.indices.exists(index=index_name):
+            msg = f'Index "{index_name}" already exists.'
             if ignore_if_exists:
                 print("Warning:", msg)
             else:
                 raise ValueError(msg)
         else:
-            self.es.indices.create(index=self.index_name, body=self.mapping)
+            self.es.indices.create(index=index_name, body=mapping)
 
     def delete_index(
         self,
+        index_name: str,
         ignore_if_not_exists: bool = True,
     ) -> None:
-        if self.es.indices.exists(index=self.index_name):
-            self.es.indices.delete(index=self.index_name)
+        if self.es.indices.exists(index=index_name):
+            self.es.indices.delete(index=index_name)
         else:
-            msg = f'Index "{self.index_name}" doesn\'t exist.'
+            msg = f'Index "{index_name}" doesn\'t exist.'
             if ignore_if_not_exists:
                 print("Warning:", msg)
             else:
