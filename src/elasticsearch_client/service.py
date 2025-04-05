@@ -2,13 +2,9 @@ from typing import Any
 
 from elasticsearch import Elasticsearch
 
-from src.elasticsearch_client.client.index_manager import (
-    ElasticsearchIndexManager,
-)
-from src.elasticsearch_client.client.read_repository import (
-    ElasticsearchReadRepository,
-)
-from src.elasticsearch_client.client.write_repository import (
+from src.elasticsearch_client.index_manager import ElasticsearchIndexManager
+from src.elasticsearch_client.read_repository import ElasticsearchReadRepository
+from src.elasticsearch_client.write_repository import (
     ElasticsearchWriteRepository,
 )
 

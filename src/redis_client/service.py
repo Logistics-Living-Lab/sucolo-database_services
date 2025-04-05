@@ -1,8 +1,8 @@
 from redis import Redis
 
-from src.redis_module.client.keys_manager import RedisKeysManager
-from src.redis_module.client.read_repository import RedisReadRepository
-from src.redis_module.client.write_repository import RedisWriteRepository
+from src.redis_client.keys_manager import RedisKeysManager
+from src.redis_client.read_repository import RedisReadRepository
+from src.redis_client.write_repository import RedisWriteRepository
 
 
 class RedisService:
