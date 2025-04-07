@@ -41,7 +41,7 @@ class ElasticsearchReadRepository:
     ) -> dict[str, dict[str, str | int | float]]:
         return self._get_geopolygons(
             index_name=index_name,
-            id_name="name",
+            id_name="district",
             type_name="district",
             features=features,
             only_polygon=only_polygon,
