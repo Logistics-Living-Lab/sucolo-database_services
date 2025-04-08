@@ -3,6 +3,7 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 from elasticsearch import Elasticsearch
+from pydantic import BaseModel
 from redis import Redis
 
 from sucolo_database_services.elasticsearch_client.service import (
@@ -12,6 +13,40 @@ from sucolo_database_services.redis_client.consts import POIS_SUFFIX
 from sucolo_database_services.redis_client.service import RedisService
 
 HEX_ID_TYPE = str
+
+
+class AmenityQuery(BaseModel):
+    amenity: str
+    radius: int
+    penalty: int | None = None
+
+
+class HexagonQuery(BaseModel):
+    features: list[str]
+
+
+class DataQuery(BaseModel):
+    city: str
+    nearests: list[AmenityQuery] = []
+    counts: list[AmenityQuery] = []
+    presences: list[AmenityQuery] = []
+    hexagons: HexagonQuery | None = None
+
+    def __post_model_init__(self) -> None:
+        def check(l_q: list[AmenityQuery] | HexagonQuery | None) -> bool:
+            return l_q is None or (
+                not isinstance(l_q, HexagonQuery) and len(l_q) == 0
+            )
+
+        if (
+            check(self.nearests)
+            and check(self.counts)
+            and check(self.presences)
+            and check(self.hexagons)
+        ):
+            raise ValueError(
+                "At least one of the queries type has to be defined."
+            )
 
 
 class DBService:
@@ -71,6 +106,49 @@ class DBService:
         district_attributes = list(df.columns)
         return district_attributes
 
+    def get_multiple_features(self, query: DataQuery) -> pd.DataFrame:
+        index = pd.Index(
+            self.es_service.read.get_hexagons(
+                index_name=query.city, features=[], only_location=True
+            ).keys()
+        )
+        df = pd.DataFrame(index=index)
+        for subquery in query.nearests:
+            nearest_feature = self.calculate_nearests_distances(
+                city=query.city,
+                amenity=subquery.amenity,
+                radius=subquery.radius,
+                penalty=subquery.penalty,
+            )
+            df = df.join(
+                pd.Series(nearest_feature, name="nearest_" + subquery.amenity)
+            )
+        for subquery in query.counts:
+            count_feature = self.count_pois_in_distance(
+                city=query.city,
+                amenity=subquery.amenity,
+                radius=subquery.radius,
+            )
+            df = df.join(
+                pd.Series(count_feature, name="count_" + subquery.amenity)
+            )
+        for subquery in query.presences:
+            presence_feature = self.determin_presence_in_distance(
+                city=query.city,
+                amenity=subquery.amenity,
+                radius=subquery.radius,
+            )
+            df = df.join(
+                pd.Series(presence_feature, name="present_" + subquery.amenity)
+            )
+        if query.hexagons is not None:
+            hexagon_features = self.get_hexagon_static_features(
+                city=query.city, feature_columns=query.hexagons.features
+            )
+            df = df.join(hexagon_features)
+
+        return df
+
     def calculate_nearests_distances(
         self,
         city: str,
@@ -94,10 +172,10 @@ class DBService:
 
     def _nearest_post_processing(
         self,
-        nearest_distances: dict[str, float],
+        nearest_distances: dict[str, list[float]],
         radius: int,
         penalty: int | None,
-    ) -> dict[str, float]:
+    ) -> dict[str, float | None]:
         if penalty is None:
             first_nearest_distances = {
                 hex_id: (dists[0] if len(dists) > 0 else None)
@@ -143,7 +221,7 @@ class DBService:
         self,
         city: str,
         feature_columns: list[str],
-    ) -> dict[HEX_ID_TYPE, int | float]:
+    ) -> pd.DataFrame:
         district_data = self.es_service.read.get_hexagons(
             index_name=city,
             features=feature_columns,
@@ -156,8 +234,7 @@ class DBService:
                 if col in ["hex_id", "type", "location"]
             ]
         )
-        hexagons = df.to_dict(orient="index")
-        return hexagons  # type: ignore[return-value]
+        return df
 
     def delete_city_data(
         self,
