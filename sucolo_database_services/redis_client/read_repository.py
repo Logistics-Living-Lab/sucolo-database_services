@@ -11,8 +11,9 @@ class RedisReadRepository:
     def get_hexagons(self, city: str) -> list[str]:
         hex_ids = [
             hex_id.decode("utf-8")
-            for hex_id in self.redis_client.zrange(
-                city + HEX_SUFFIX, 0, -1)
+            for hex_id in self.redis_client.zrange(  # type: ignore[union-attr]
+                city + HEX_SUFFIX, 0, -1
+            )
         ]
         return hex_ids
 
@@ -30,7 +31,7 @@ class RedisReadRepository:
         radius: int = 300,
         unit: str = "m",
         count: int | None = 1,
-    ) -> dict[str, list[dict[str, float]]]:
+    ) -> dict[str, list[float]]:
         hex_key = city + HEX_SUFFIX
         pois_key = city + "_" + amenity + POIS_SUFFIX
         check_if_keys_exist(client=self.redis_client, keys=[hex_key, pois_key])
@@ -49,7 +50,6 @@ class RedisReadRepository:
             count=count,
         )
         processed_pois = self._pois_postprocessing(
-            city=city,
             nearest_pois=nearest_pois,
             hex_ids=hex_ids,  # type: ignore[arg-type]
         )
@@ -92,14 +92,14 @@ class RedisReadRepository:
 
     def _pois_postprocessing(
         self,
-        city: str,
         nearest_pois: list[list[tuple[bytes, float]]],
         hex_ids: list[bytes],
-    ) -> dict[str, list[dict[str, float]]]:
+    ) -> dict[str, list[float]]:
         data = {
             hex_id.decode("utf-8"): [
-                {poi_id.decode("utf-8"): distance}
-                for poi_id, distance in hex_pois_distances
+                # poi_id.decode("utf-8"): distance
+                distance
+                for _, distance in hex_pois_distances
             ]
             for hex_id, hex_pois_distances in zip(hex_ids, nearest_pois)
         }

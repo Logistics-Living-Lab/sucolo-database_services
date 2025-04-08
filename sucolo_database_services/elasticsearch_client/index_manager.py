@@ -42,13 +42,13 @@ class ElasticsearchIndexManager:
     def delete_index(
         self,
         index_name: str,
-        ignore_if_not_exists: bool = True,
+        ignore_if_index_not_exist: bool = True,
     ) -> None:
         if self.es.indices.exists(index=index_name):
             self.es.indices.delete(index=index_name)
         else:
             msg = f'Index "{index_name}" doesn\'t exist.'
-            if ignore_if_not_exists:
+            if ignore_if_index_not_exist:
                 print("Warning:", msg)
             else:
                 raise ValueError(msg)

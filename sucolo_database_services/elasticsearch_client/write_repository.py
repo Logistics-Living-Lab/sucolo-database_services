@@ -57,17 +57,15 @@ class ElasticsearchWriteRepository:
         index_name: str,
         districts: gpd.GeoDataFrame,
         hex_resolution: int,
-        extra_features: list[str] = [],
     ) -> None:
         distric_hexagons = polygons2hexagons(
             districts, resolution=hex_resolution
         )
+        districts = districts.drop(columns=["district", "geometry"])
 
         def doc_stream() -> Iterator[dict[str, Any]]:
             for distric_id, hex_centers in distric_hexagons.items():
-                district_features = districts.loc[
-                    distric_id, extra_features
-                ].to_dict()
+                district_features = districts.loc[distric_id].to_dict()
                 for id_, center in hex_centers:
                     data = {
                         "type": "hex_center",
