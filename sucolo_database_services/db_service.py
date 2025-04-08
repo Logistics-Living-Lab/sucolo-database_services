@@ -21,7 +21,7 @@ class DBService:
         elastic_user: str,
         elastic_password: str,
         redis_host: str,
-        redis_port: str,
+        redis_port: int,
         redis_db: int,
         ca_certs: Path = Path("certs/ca.crt"),
     ) -> None:
@@ -72,7 +72,11 @@ class DBService:
         return district_attributes
 
     def calculate_nearests_distances(
-        self, city: str, amenity: str, radius: int
+        self,
+        city: str,
+        amenity: str,
+        radius: int,
+        penalty: int | None,
     ) -> dict[HEX_ID_TYPE, float | None]:
         nearest_distances = self.redis_service.read.nearest_pois_to_hex_centers(
             city=city,
@@ -81,10 +85,29 @@ class DBService:
             unit="m",
             count=1,
         )
-        first_nearest_distances = {
-            hex_id: (dists[0] if len(dists) > 0 else None)
-            for hex_id, dists in nearest_distances.items()
-        }
+        first_nearest_distances = self._nearest_post_processing(
+            nearest_distances=nearest_distances,
+            radius=radius,
+            penalty=penalty,
+        )
+        return first_nearest_distances
+
+    def _nearest_post_processing(
+        self,
+        nearest_distances: dict[str, float],
+        radius: int,
+        penalty: int | None,
+    ) -> dict[str, float]:
+        if penalty is None:
+            first_nearest_distances = {
+                hex_id: (dists[0] if len(dists) > 0 else None)
+                for hex_id, dists in nearest_distances.items()
+            }
+        else:
+            first_nearest_distances = {
+                hex_id: (dists[0] if len(dists) > 0 else radius + penalty)
+                for hex_id, dists in nearest_distances.items()
+            }
         return first_nearest_distances
 
     def count_pois_in_distance(
@@ -205,6 +228,6 @@ class DBService:
         )
         print("Wheelchair accessible PoIs uploaded.")
 
-    def count_amenity_records(self, city: str) -> dict[str, int]:
+    def count_records_per_amenity(self, city: str) -> dict[str, int]:
         result = self.redis_service.read.count_records_per_key(city)
         return result
