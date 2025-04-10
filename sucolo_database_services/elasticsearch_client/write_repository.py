@@ -17,7 +17,10 @@ class ElasticsearchWriteRepository:
         extra_features: list[str] = [],
     ) -> None:
         def doc_stream() -> Iterator[dict[str, Any]]:
-            pois_features = gdf[extra_features].to_dict()
+            if len(extra_features) > 0:
+                pois_features = gdf[extra_features].to_dict()
+            else:
+                pois_features = {}
             for amenity, point in zip(gdf["amenity"], gdf["geometry"]):
                 data = {
                     "type": "poi",

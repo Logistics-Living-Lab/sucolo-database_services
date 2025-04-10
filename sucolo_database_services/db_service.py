@@ -94,6 +94,7 @@ class DBService:
                     config.database.elastic_password,
                 ),
                 ca_certs=str(config.database.ca_certs),
+                timeout=config.database.elastic_timeout,
             )
         )
         self.redis_service = RedisService(
@@ -413,6 +414,7 @@ class DBService:
             hex_resolution: Resolution for hexagon grid
         """
         try:
+            # ELASTICSEARCH PART
             self.es_service.index_manager.create_index(
                 index_name=city,
                 ignore_if_exists=ignore_if_index_exists,
@@ -421,7 +423,6 @@ class DBService:
 
             self.es_service.write.upload_pois(index_name=city, gdf=pois_gdf)
             logger.info(f"PoIs uploaded to elasticsearch for index {city}.")
-
             self.es_service.write.upload_districts(
                 index_name=city, gdf=distric_gdf
             )
@@ -435,12 +436,11 @@ class DBService:
                 districts=distric_gdf,
                 hex_resolution=hex_resolution,
             )
-            logger.info(f"Hexagons uploaded to elasticsearch for index {city}.")
-
-            self.redis_service.write.upload_hex_centers(
-                city=city, districts=distric_gdf, resolution=hex_resolution
+            logger.info(
+                "Hexagons uploaded to elasticsearch " f"for index {city}."
             )
-            logger.info(f"Hexagons uploaded to redis for city {city}.")
+
+            # REDIS PART
             self.redis_service.write.upload_pois_by_amenity_key(
                 city=city, pois=pois_gdf
             )
@@ -454,6 +454,12 @@ class DBService:
             logger.info(
                 f"Wheelchair accessible PoIs uploaded to redis for city {city}."
             )
+
+            self.redis_service.write.upload_hex_centers(
+                city=city, districts=distric_gdf, resolution=hex_resolution
+            )
+            logger.info(f"Hexagons uploaded to redis for city {city}.")
+
             logger.info(f"Successfully uploaded all data for city {city}")
         except Exception as e:
             logger.error(f"Error uploading city data for {city}: " f"{str(e)}")

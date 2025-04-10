@@ -15,6 +15,9 @@ class DatabaseConfig(BaseModel):
     elastic_host: str = Field(..., description="Elasticsearch host URL")
     elastic_user: str = Field(..., description="Elasticsearch username")
     elastic_password: str = Field(..., description="Elasticsearch password")
+    elastic_timeout: int = Field(
+        default=60, description="Elasticsearch timeout in seconds"
+    )
     redis_host: str = Field(..., description="Redis host")
     redis_port: int = Field(..., description="Redis port")
     redis_db: int = Field(..., description="Redis database number")

@@ -22,6 +22,6 @@ def polygons2hexagons(
 def _shapely_to_latlngpoly(geometry: Polygon) -> h3.LatLngPoly:
     exterior = [(lon, lat) for lon, lat in geometry.exterior.coords]
     holes = [
-        [(lon, lat) for lon, lat in hole.coords] for hole in geometry.interiors
+        (lon, lat) for hole in geometry.interiors for lon, lat in hole.coords
     ]
     return h3.LatLngPoly(exterior, holes)
