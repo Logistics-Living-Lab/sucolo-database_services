@@ -1,11 +1,10 @@
 import logging
-from pathlib import Path
 from typing import Optional
 
 import geopandas as gpd
 import pandas as pd
 from elasticsearch import Elasticsearch
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from redis import Redis
 
 from sucolo_database_services.elasticsearch_client.service import (
@@ -13,6 +12,8 @@ from sucolo_database_services.elasticsearch_client.service import (
 )
 from sucolo_database_services.redis_client.consts import POIS_SUFFIX
 from sucolo_database_services.redis_client.service import RedisService
+from sucolo_database_services.utils.config import Config
+from sucolo_database_services.utils.exceptions import CityNotFoundError
 
 # Configure logging
 logging.basicConfig(
@@ -34,7 +35,7 @@ class AmenityQuery(BaseModel):
     @field_validator("radius")
     def validate_radius(cls, radius: int) -> int:
         if radius <= 0:
-            raise ValueError("Radius must be positive")
+            raise ValidationError("Radius must be positive")
         return radius
 
 
@@ -75,52 +76,49 @@ class DBService:
 
     def __init__(
         self,
-        elastic_host: str,
-        elastic_user: str,
-        elastic_password: str,
-        redis_host: str,
-        redis_port: int,
-        redis_db: int,
-        ca_certs: Path = Path("certs/ca.crt"),
+        config: Config,
     ) -> None:
-        """Initialize the database service with Elasticsearch and Redis
-        connections.
+        """Initialize the database service with configuration.
 
         Args:
-            elastic_host: Elasticsearch host URL
-            elastic_user: Elasticsearch username
-            elastic_password: Elasticsearch password
-            redis_host: Redis host
-            redis_port: Redis port
-            redis_db: Redis database number
-            ca_certs: Path to CA certificates file
+            config: Configuration object containing all necessary settings
         """
-        assert ca_certs.is_file(), f"File {ca_certs} not found."
+        assert (
+            config.database.ca_certs.is_file()
+        ), f"File {config.database.ca_certs} not found."
         self.es_service = ElasticsearchService(
             Elasticsearch(
-                hosts=[elastic_host],
-                basic_auth=(elastic_user, elastic_password),
-                ca_certs=str(ca_certs),
+                hosts=[config.database.elastic_host],
+                basic_auth=(
+                    config.database.elastic_user,
+                    config.database.elastic_password,
+                ),
+                ca_certs=str(config.database.ca_certs),
             )
         )
         self.redis_service = RedisService(
             Redis(
-                host=redis_host,
-                port=redis_port,
-                db=redis_db,
+                host=config.database.redis_host,
+                port=config.database.redis_port,
+                db=config.database.redis_db,
             )
         )
 
     def get_cities(self) -> list[str]:
+        """Get list of all available cities."""
+
         cities = self.es_service.get_all_indices()
         cities = list(filter(lambda city: city[0] != ".", cities))
         return cities
 
     def get_amenities(self, city: str) -> list[str]:
+        """Get list of all amenities for a given city."""
+
         city_keys = self.redis_service.keys_manager.get_city_keys(city)
         poi_keys = list(
             filter(
-                lambda key: key[-len(POIS_SUFFIX) :] == POIS_SUFFIX, city_keys
+                lambda key: key[-len(POIS_SUFFIX) :] == POIS_SUFFIX,
+                city_keys,
             )
         )
         amenities = list(
@@ -132,6 +130,8 @@ class DBService:
         return amenities
 
     def get_district_attributes(self, city: str) -> list[str]:
+        """Get list of all district attributes for a given city."""
+
         district_data = self.es_service.read.get_districts(
             index_name=city,
         )
@@ -153,9 +153,15 @@ class DBService:
         Returns:
             DataFrame containing all requested features indexed by hex_id
         """
+        # Validate city exists
+        if query.city not in self.get_cities():
+            raise CityNotFoundError(f"City {query.city} not found")
+
         index = pd.Index(
             self.es_service.read.get_hexagons(
-                index_name=query.city, features=[], only_location=True
+                index_name=query.city,
+                features=[],
+                only_location=True,
             ).keys()
         )
         df = pd.DataFrame(index=index)
@@ -164,37 +170,46 @@ class DBService:
         for subquery in query.nearests:
             nearest_feature = self.calculate_nearests_distances(
                 city=query.city,
-                amenity=subquery.amenity,
-                radius=subquery.radius,
-                penalty=subquery.penalty,
+                query=subquery,
             )
             df = df.join(
-                pd.Series(nearest_feature, name="nearest_" + subquery.amenity)
+                pd.Series(
+                    nearest_feature,
+                    name="nearest_" + subquery.amenity,
+                )
             )
 
+        # Process counts
         for subquery in query.counts:
             count_feature = self.count_pois_in_distance(
                 city=query.city,
-                amenity=subquery.amenity,
-                radius=subquery.radius,
+                query=subquery,
             )
             df = df.join(
-                pd.Series(count_feature, name="count_" + subquery.amenity)
+                pd.Series(
+                    count_feature,
+                    name="count_" + subquery.amenity,
+                )
             )
+
         # Process presences
         for subquery in query.presences:
             presence_feature = self.determine_presence_in_distance(
                 city=query.city,
-                amenity=subquery.amenity,
-                radius=subquery.radius,
+                query=subquery,
             )
             df = df.join(
-                pd.Series(presence_feature, name="present_" + subquery.amenity)
+                pd.Series(
+                    presence_feature,
+                    name="present_" + subquery.amenity,
+                )
             )
+
         # Process hexagon features
         if query.hexagons is not None:
             hexagon_features = self.get_hexagon_static_features(
-                city=query.city, feature_columns=query.hexagons.features
+                city=query.city,
+                feature_columns=query.hexagons.features,
             )
             df = df.join(hexagon_features)
 
@@ -203,21 +218,30 @@ class DBService:
     def calculate_nearests_distances(
         self,
         city: str,
-        amenity: str,
-        radius: int,
-        penalty: int | None,
+        query: AmenityQuery,
     ) -> dict[HEX_ID_TYPE, float | None]:
-        nearest_distances = self.redis_service.read.nearest_pois_to_hex_centers(
-            city=city,
-            amenity=amenity,
-            radius=radius,
-            unit="m",
-            count=1,
+        """Calculate nearest distances for a given amenity type.
+
+        Args:
+            city: City name
+            query: AmenityQuery containing amenity type and search parameters
+
+        Returns:
+            Dictionary mapping hex_id to nearest distance or None
+        """
+        nearest_distances = (
+            self.redis_service.read.find_nearest_pois_to_hex_centers(
+                city=city,
+                amenity=query.amenity,
+                radius=query.radius,
+                unit="m",
+                count=1,
+            )
         )
         first_nearest_distances = self._nearest_post_processing(
             nearest_distances=nearest_distances,
-            radius=radius,
-            penalty=penalty,
+            radius=query.radius,
+            penalty=query.penalty,
         )
         return first_nearest_distances
 
@@ -227,6 +251,16 @@ class DBService:
         radius: int,
         penalty: int | None,
     ) -> dict[str, float | None]:
+        """Post-process nearest distances with optional penalty.
+
+        Args:
+            nearest_distances: Dictionary of hex_id to list of distances
+            radius: Search radius
+            penalty: Optional penalty to add when no POI is found
+
+        Returns:
+            Dictionary mapping hex_id to processed distance
+        """
         if penalty is None:
             first_nearest_distances = {
                 hex_id: (dists[0] if len(dists) > 0 else None)
@@ -240,12 +274,23 @@ class DBService:
         return first_nearest_distances
 
     def count_pois_in_distance(
-        self, city: str, amenity: str, radius: int
+        self,
+        city: str,
+        query: AmenityQuery,
     ) -> dict[HEX_ID_TYPE, int]:
-        nearest_pois = self.redis_service.read.nearest_pois_to_hex_centers(
+        """Count POIs within a given radius.
+
+        Args:
+            city: City name
+            query: AmenityQuery containing amenity type and search parameters
+
+        Returns:
+            Dictionary mapping hex_id to count of POIs
+        """
+        nearest_pois = self.redis_service.read.find_nearest_pois_to_hex_centers(
             city=city,
-            amenity=amenity,
-            radius=radius,
+            amenity=query.amenity,
+            radius=query.radius,
             unit="m",
             count=None,
         )
@@ -253,24 +298,24 @@ class DBService:
         return counts
 
     def determine_presence_in_distance(
-        self, city: str, amenity: str, radius: int
+        self,
+        city: str,
+        query: AmenityQuery,
     ) -> dict[HEX_ID_TYPE, int]:
-        """Determine if any POIs of a given amenity type are present within
-        the specified radius.
+        """Determine if any POIs are present within a given radius.
 
         Args:
             city: City name
-            amenity: Type of amenity to check
-            radius: Search radius in meters
+            query: AmenityQuery containing amenity type and search parameters
 
         Returns:
             Dictionary mapping hex_id to presence indicator
             (1 if present, 0 if not)
         """
-        nearest_pois = self.redis_service.read.nearest_pois_to_hex_centers(
+        nearest_pois = self.redis_service.read.find_nearest_pois_to_hex_centers(
             city=city,
-            amenity=amenity,
-            radius=radius,
+            amenity=query.amenity,
+            radius=query.radius,
             unit="m",
             count=None,
         )
@@ -285,6 +330,15 @@ class DBService:
         city: str,
         feature_columns: list[str],
     ) -> pd.DataFrame:
+        """Get static features for hexagons.
+
+        Args:
+            city: City name
+            feature_columns: List of feature columns to retrieve
+
+        Returns:
+            DataFrame containing the requested features
+        """
         district_data = self.es_service.read.get_hexagons(
             index_name=city,
             features=feature_columns,

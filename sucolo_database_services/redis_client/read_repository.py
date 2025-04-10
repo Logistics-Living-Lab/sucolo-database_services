@@ -24,7 +24,7 @@ class RedisReadRepository:
                 result[key] = self.redis_client.zcard(key)
         return result  # type: ignore[return-value]
 
-    def nearest_pois_to_hex_centers(
+    def find_nearest_pois_to_hex_centers(
         self,
         city: str,
         amenity: str,
