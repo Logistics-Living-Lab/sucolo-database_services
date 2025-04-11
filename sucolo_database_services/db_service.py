@@ -349,7 +349,7 @@ class DBService:
             columns=[
                 col
                 for col in df.columns
-                if col in ["hex_id", "type", "location"]
+                if col in ["hex_id", "type", "location", "polygon"]
             ]
         )
         return df

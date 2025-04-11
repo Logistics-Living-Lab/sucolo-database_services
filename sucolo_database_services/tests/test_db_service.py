@@ -50,6 +50,64 @@ def test_get_all_indices(db_service: DBService, mocker: MockerFixture) -> None:
     db_service.get_cities()
 
 
+def test_get_hexagon_static_features(
+    db_service: DBService, mocker: MockerFixture
+) -> None:
+    # Mock the get_hexagon_static_features method
+    mocker.patch.object(
+        db_service.es_service.read,
+        "get_hexagons",
+        return_value={
+            "hex1": {
+                "type": "hexagon",
+                "polygon": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]
+                    ],
+                },
+                "Employed income": 10000,
+                "Average age": 30,
+            },
+            "hex2": {
+                "type": "hexagon",
+                "polygon": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]
+                    ],
+                },
+                "Employed income": 20000,
+                "Average age": 40,
+            },
+            "hex3": {
+                "type": "hexagon",
+                "polygon": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]
+                    ],
+                },
+                "Employed income": 30000,
+                "Average age": 50,
+            },
+        },
+    )
+
+    feature_columns = ["Employed income", "Average age"]
+
+    # Call the method
+    result = db_service.get_hexagon_static_features(
+        city="leipzig",
+        feature_columns=feature_columns,
+    )
+
+    # Verify the result is a DataFrame
+    assert isinstance(result, pd.DataFrame)
+    assert len(result.columns) == len(feature_columns)
+    assert result.columns.isin(feature_columns).all()
+
+
 def test_error_handling(db_service: DBService, mocker: MockerFixture) -> None:
     # Mock Redis service to raise an error
     mocker.patch.object(
