@@ -7,6 +7,9 @@ from elasticsearch import Elasticsearch
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from redis import Redis
 
+from sucolo_database_services.elasticsearch_client.index_manager import (
+    default_mapping,
+)
 from sucolo_database_services.elasticsearch_client.service import (
     ElasticsearchService,
 )
@@ -14,9 +17,6 @@ from sucolo_database_services.redis_client.consts import POIS_SUFFIX
 from sucolo_database_services.redis_client.service import RedisService
 from sucolo_database_services.utils.config import Config
 from sucolo_database_services.utils.exceptions import CityNotFoundError
-from sucolo_database_services.elasticsearch_client.index_manager import (
-    default_mapping,
-)
 
 # Configure logging
 logging.basicConfig(

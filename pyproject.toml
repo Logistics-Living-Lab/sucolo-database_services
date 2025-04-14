@@ -1,20 +1,57 @@
+[project]
+name = "sucolo-database-services"
+version = "0.1.0"
+description = "A Python client for Sucolo's database services."
+authors = [
+    {name = "Stanislaw Straburzynski", email = "sstraburzynski@gmail.com"}
+]
+requires-python = ">=3.10,<3.14"
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = ["database", "elasticsearch", "redis", "geospatial"]
+
 [tool.poetry]
 name = "sucolo_database_services"
 version = "0.1.0"
-description = ""
+description = "A Python client for Sucolo's database services."
 authors = ["Stanislaw Straburzynski <sstraburzynski@gmail.com>"]
 readme = "README.md"
+license = "MIT"
 packages = [{include = "sucolo_database_services"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = ["database", "elasticsearch", "redis", "geospatial"]
+homepage = "https://github.com/Stashq/sucolo-database_services"
+repository = "https://github.com/Stashq/sucolo-database_services.git"
+documentation = "https://github.com/Stashq/sucolo-database_services#readme"
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.12"
+python = ">=3.10,<3.14"
 elasticsearch = "^8.17.2"
 redis = "^5.2.1"
 pandas = "^2.2.3"
 geopandas = "^1.0.1"
 h3 = "^4.2.2"
 pydantic = "^2.11.3"
-python-dotenv = "^1.1.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.1.1"
@@ -23,7 +60,7 @@ coverage = "^7.2.2"
 flake8 = "^6.0.0"
 isort = "^5.12.0"
 pre-commit = "^3.2.0"
-pandas-stubs = "^1.5.3.230304"
+pandas-stubs = "^2.2.3.250308"
 types-requests = "^2.28.11.15"
 types-pillow = "^9.4.0.17"
 types-pyyaml = "^6.0.12.9"
@@ -42,6 +79,7 @@ types-colorama = "^0.4.15.20240311"
 types-pexpect = "^4.9.0.20241208"
 pytest-mock = "^3.14.0"
 pytest-cov = "^6.1.1"
+tox = "^4.25.0"
 
 [tool.black]
 line-length = 80
@@ -85,6 +123,41 @@ filterwarnings = [
 [build-system]
 requires = [
     "wheel",
+    "setuptools>=61.0",
     "setuptools-scm[toml]>=8.0",
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sucolo_database_services*"]
+exclude = ["tests*", "tests.*", "*.tests", "*.tests.*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "sucolo_database_services.__version__"}
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py{310,311,312,313}
+tox_min_version = "4.0.0"
+isolated_build = true
+
+[testenv]
+basepython =
+    py310: /home/stanislaw/.pyenv/versions/3.10.15/bin/python
+    py311: /home/stanislaw/.pyenv/versions/3.11.10/bin/python
+    py312: /home/stanislaw/.pyenv/versions/3.12.7/bin/python
+deps =
+    pytest
+    pytest-cov
+    pytest-mock
+    poetry
+commands =
+    poetry lock --no-interaction
+    poetry install --no-interaction --without=dev
+    poetry run pytest
+"""
