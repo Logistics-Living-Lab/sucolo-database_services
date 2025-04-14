@@ -21,4 +21,7 @@ test_cov:
 	poetry run coverage xml -o coverage/coverage.xml
 	poetry run coverage report --show-missing
 
+test_tox:
+	poetry run tox
+
 build: isort black flake8 mypy test
