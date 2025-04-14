@@ -1,5 +1,7 @@
 from elasticsearch import Elasticsearch
 
+COORD_TYPE = dict[str, float]
+
 
 class ElasticsearchReadRepository:
     def __init__(self, es_client: Elasticsearch):
@@ -10,7 +12,7 @@ class ElasticsearchReadRepository:
         index_name: str,
         features: list[str] = [],
         only_location: bool = False,
-    ) -> dict[str, dict[str, str | int | float]]:
+    ) -> dict[str, dict[str, str | int | float | COORD_TYPE]]:
         return self._get_geopoints(
             index_name=index_name,
             id_name=None,
@@ -24,7 +26,7 @@ class ElasticsearchReadRepository:
         index_name: str,
         features: list[str] = [],
         only_location: bool = False,
-    ) -> dict[str, dict[str, str | int | float]]:
+    ) -> dict[str, dict[str, str | int | float | COORD_TYPE]]:
         return self._get_geopoints(
             index_name=index_name,
             id_name="hex_id",
@@ -38,7 +40,7 @@ class ElasticsearchReadRepository:
         index_name: str,
         features: list[str] = [],
         only_polygon: bool = False,
-    ) -> dict[str, dict[str, str | int | float]]:
+    ) -> dict[str, dict[str, str | int | float | COORD_TYPE]]:
         return self._get_geopolygons(
             index_name=index_name,
             id_name="district",
@@ -55,7 +57,7 @@ class ElasticsearchReadRepository:
         features: list[str] = [],
         only_location: bool = False,
         size: int = 10_000,
-    ) -> dict[str, dict[str, str | int | float]]:
+    ) -> dict[str, dict[str, str | int | float | COORD_TYPE]]:
         if only_location:
             features = ["location"]
 
@@ -75,7 +77,7 @@ class ElasticsearchReadRepository:
         features: list[str] = [],
         only_polygon: bool = False,
         size: int = 10_000,
-    ) -> dict[str, dict[str, str | int | float]]:
+    ) -> dict[str, dict[str, str | int | float | COORD_TYPE]]:
         if only_polygon:
             features = ["polygon"]
 
@@ -94,7 +96,7 @@ class ElasticsearchReadRepository:
         id_name: str | None = None,
         features: list[str] = [],
         size: int = 10_000,
-    ) -> dict[str, dict[str, str | int | float]]:
+    ) -> dict[str, dict[str, str | int | float | COORD_TYPE]]:
         query = {
             "size": size,
             "query": {"term": {"type": type_name}},

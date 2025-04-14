@@ -44,16 +44,38 @@ class ElasticsearchWriteRepository:
         index_name: str,
         gdf: gpd.GeoDataFrame,
     ) -> None:
+        """Upload districts to Elasticsearch.
+
+        Args:
+            gdf (gpd.GeoDataFrame): GeoDataFrame containing district polygons
+        """
         gdf["polygon"] = gdf["geometry"].apply(lambda g: g.wkt)
-        gdf = gdf.drop(columns=["geometry"])
-        gdf["type"] = "district"
+        gdf = gdf[["district", "polygon"]]
 
-        def doc_stream() -> Iterator[dict[str, Any]]:
-            for row_dict in gdf.to_dict(orient="records"):
-                yield row_dict
+        print(f"Prepared {len(gdf)} documents for upload")
 
-        for doc in doc_stream():
-            self.es.index(index=index_name, body=doc)
+        try:
+            for i, row in gdf.iterrows():
+                try:
+                    self.es.index(
+                        index=index_name,
+                        id=row["district"],
+                        document=row.to_dict(),
+                    )
+                    if i % 10 == 0:  # Log progress every 10 documents
+                        print(f"Uploaded {i+1}/{len(gdf)} districts")
+                except Exception as e:
+                    print(
+                        f"Error uploading district {row['district']}: {str(e)}"
+                    )
+
+            print("Upload completed")
+            # Verify the upload
+            count = self.es.count(index=index_name)
+            print(f"Total documents in index: {count['count']}")
+
+        except Exception as e:
+            print(f"Error during upload: {str(e)}")
 
     def upload_hex_centers(
         self,

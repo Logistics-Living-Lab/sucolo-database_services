@@ -6,12 +6,34 @@ from elasticsearch import Elasticsearch
 default_mapping = {
     "mappings": {
         "properties": {
+            # Shared properties
             "type": {"type": "keyword"},
+            # PoI properties
             "amenity": {"type": "text"},
-            "name": {"type": "text"},
-            "hex_id": {"type": "text"},  # For hexagon centers
             "location": {"type": "geo_point"},  # For POIs (Points of Interest)
+            # Hexagon properties
+            "hex_id": {"type": "text"},  # For hexagon centers
+            # District properties
+            "district": {"type": "text"},
             "polygon": {"type": "geo_shape"},  # For district shapes (GeoShapes)
+            # Hexagon and district properties
+            "Average age": {"type": "float"},
+            "Employed income": {"type": "float"},
+            "Gross monthly wages": {"type": "float"},
+            "Household income": {"type": "float"},
+            "Households with 1 person": {"type": "float"},
+            "Households with 2 people": {"type": "float"},
+            "Households with 3 people": {"type": "float"},
+            "Households with 4 people": {"type": "float"},
+            "Households with 5 or more people": {"type": "float"},
+            "Housing": {"type": "float"},
+            "Other income": {"type": "float"},
+            "Pensions": {"type": "float"},
+            "Population density": {"type": "float"},
+            "Total employed": {"type": "float"},
+            "Total population": {"type": "float"},
+            "Total unemployed": {"type": "float"},
+            "Unemployment benefits": {"type": "float"},
         }
     }
 }

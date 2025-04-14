@@ -41,6 +41,7 @@ types-pygments = "^2.19.0.20250305"
 types-colorama = "^0.4.15.20240311"
 types-pexpect = "^4.9.0.20241208"
 pytest-mock = "^3.14.0"
+pytest-cov = "^6.1.1"
 
 [tool.black]
 line-length = 80

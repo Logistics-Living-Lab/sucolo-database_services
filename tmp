@@ -1,0 +1,3 @@
+	poetry run coverage html -d coverage/html
+	poetry run coverage xml -o coverage/coverage.xml
+	poetry run coverage report --show-missing

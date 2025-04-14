@@ -1,0 +1,40 @@
+[run]
+source=sucolo_database_services
+
+[report]
+exclude_lines =
+    # Don't complain about abstract methods
+    @abstractmethod
+    @abc.abstractmethod
+
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain about missing debug-only code:
+    def __repr__
+    if self\.debug
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if __name__ == .__main__.:
+
+ignore_errors = True
+skip_empty = True
+
+omit =
+    */tests/*
+    */test/*
+    */cli/*
+    */logger/*
+    sucolo_database_services/runs/*
+    */main.py
+    */logger.py
+    sucolo_database_services/utils/__init__.py
+    sucolo_database_services/nn/models/backbones/*
+    sucolo_database_services/app/server.py
+    sucolo_database_services/nn/models/modules/callbacks/*
+    sucolo_database_services/utils/logging/console_logger.py

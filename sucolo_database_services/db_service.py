@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Any
 
 import geopandas as gpd
 import pandas as pd
@@ -14,6 +14,9 @@ from sucolo_database_services.redis_client.consts import POIS_SUFFIX
 from sucolo_database_services.redis_client.service import RedisService
 from sucolo_database_services.utils.config import Config
 from sucolo_database_services.utils.exceptions import CityNotFoundError
+from sucolo_database_services.elasticsearch_client.index_manager import (
+    default_mapping,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -28,7 +31,7 @@ HEX_ID_TYPE = str
 class AmenityQuery(BaseModel):
     amenity: str
     radius: int = Field(gt=0, description="Radius must be positive")
-    penalty: Optional[int] = Field(
+    penalty: int | None = Field(
         default=None, ge=0, description="Penalty must be non-negative"
     )
 
@@ -169,7 +172,7 @@ class DBService:
 
         # Process nearest distances
         for subquery in query.nearests:
-            nearest_feature = self.calculate_nearests_distances(
+            nearest_feature = self.calculate_nearest_distances(
                 city=query.city,
                 query=subquery,
             )
@@ -216,7 +219,7 @@ class DBService:
 
         return df
 
-    def calculate_nearests_distances(
+    def calculate_nearest_distances(
         self,
         city: str,
         query: AmenityQuery,
@@ -401,16 +404,17 @@ class DBService:
         self,
         city: str,
         pois_gdf: gpd.GeoDataFrame,
-        distric_gdf: gpd.GeoDataFrame,
+        district_gdf: gpd.GeoDataFrame,
         hex_resolution: int = 9,
         ignore_if_index_exists: bool = True,
+        es_index_mapping: dict[str, Any] = default_mapping,
     ) -> None:
         """Upload complete city data including POIs, districts, and hexagons.
 
         Args:
             city: City name
             pois_gdf: GeoDataFrame containing POIs
-            distric_gdf: GeoDataFrame containing districts
+            district_gdf: GeoDataFrame containing districts
             hex_resolution: Resolution for hexagon grid
         """
         try:
@@ -418,13 +422,14 @@ class DBService:
             self.es_service.index_manager.create_index(
                 index_name=city,
                 ignore_if_exists=ignore_if_index_exists,
+                mapping=es_index_mapping,
             )
             logger.info(f'Index "{city}" created in elasticsearch.')
 
             self.es_service.write.upload_pois(index_name=city, gdf=pois_gdf)
             logger.info(f"PoIs uploaded to elasticsearch for index {city}.")
             self.es_service.write.upload_districts(
-                index_name=city, gdf=distric_gdf
+                index_name=city, gdf=district_gdf
             )
             logger.info(
                 f"Districts uploaded to elasticsearch for index {city}."
@@ -433,7 +438,7 @@ class DBService:
             # Uploading hexagon centers
             self.es_service.write.upload_hex_centers(
                 index_name=city,
-                districts=distric_gdf,
+                districts=district_gdf,
                 hex_resolution=hex_resolution,
             )
             logger.info(
@@ -456,7 +461,7 @@ class DBService:
             )
 
             self.redis_service.write.upload_hex_centers(
-                city=city, districts=distric_gdf, resolution=hex_resolution
+                city=city, districts=district_gdf, resolution=hex_resolution
             )
             logger.info(f"Hexagons uploaded to redis for city {city}.")
 
