@@ -140,7 +140,7 @@ class DBService:
             index_name=city,
         )
         df = pd.DataFrame.from_dict(district_data, orient="index")
-        df = df.drop(columns=["district", "polygon", "type"])
+        df = df.drop(columns=["district", "polygon", "type"], errors='ignore')
         df = df.dropna()  # get features only available for all districts
         district_attributes = list(df.columns)
         return district_attributes
