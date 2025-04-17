@@ -3,7 +3,7 @@ from typing import Any
 import geopandas as gpd
 import pandas as pd
 from _typeshed import Incomplete
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from sucolo_database_services.elasticsearch_client.index_manager import (
     default_mapping as default_mapping,
@@ -27,8 +27,10 @@ HEX_ID_TYPE = str
 
 class AmenityQuery(BaseModel):
     amenity: str
-    radius: int
-    penalty: int | None
+    radius: int = Field(gt=0, description="Radius must be positive")
+    penalty: int | None = Field(
+        default=None, ge=0, description="Penalty must be non-negative"
+    )
     def validate_radius(cls, radius: int) -> int: ...
 
 class HexagonQuery(BaseModel):
