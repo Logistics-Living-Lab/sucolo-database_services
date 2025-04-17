@@ -115,6 +115,10 @@ class DBService:
         cities = list(filter(lambda city: city[0] != ".", cities))
         return cities
 
+    def city_data_exists(self, city: str) -> bool:
+        """Check if city data exists in Elasticsearch."""
+        return self.es_service.index_manager.index_exists(city)
+
     def get_amenities(self, city: str) -> list[str]:
         """Get list of all amenities for a given city."""
 
@@ -140,7 +144,7 @@ class DBService:
             index_name=city,
         )
         df = pd.DataFrame.from_dict(district_data, orient="index")
-        df = df.drop(columns=["district", "polygon", "type"], errors='ignore')
+        df = df.drop(columns=["district", "polygon", "type"], errors="ignore")
         df = df.dropna()  # get features only available for all districts
         district_attributes = list(df.columns)
         return district_attributes

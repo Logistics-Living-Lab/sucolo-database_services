@@ -74,3 +74,8 @@ class ElasticsearchIndexManager:
                 print("Warning:", msg)
             else:
                 raise ValueError(msg)
+
+    def index_exists(self, index_name: str) -> bool:
+        return self.es.indices.exists(  # type: ignore[return-value]
+            index=index_name
+        )
