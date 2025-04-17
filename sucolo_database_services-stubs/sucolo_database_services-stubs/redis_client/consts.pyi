@@ -1,0 +1,2 @@
+HEX_SUFFIX: str
+POIS_SUFFIX: str

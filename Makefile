@@ -25,3 +25,8 @@ test_tox:
 	poetry run tox
 
 build: isort black flake8 mypy test
+
+stubs:
+	poetry run stubgen -o sucolo_database_services-stubs sucolo_database_services
+	poetry run isort sucolo_database_services-stubs
+	poetry run black --config .black.cfg sucolo_database_services-stubs
