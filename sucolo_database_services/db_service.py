@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import geopandas as gpd
 import pandas as pd
@@ -28,7 +28,28 @@ logger = logging.getLogger(__name__)
 HEX_ID_TYPE = str
 
 
-class AmenityQuery(BaseModel):
+class Query(BaseModel):
+    """Base class for all queries."""
+
+    city: str = Field(..., description="City name to query data for")
+    resolution: int = Field(..., description="Hexagon resolution level")
+
+    @field_validator("city")
+    def validate_city(cls, city: str) -> str:
+        if not city:
+            raise ValidationError("City name cannot be empty")
+        return city
+
+    @field_validator("resolution")
+    def validate_resolution(cls, resolution: int) -> int:
+        if resolution <= 0:
+            raise ValidationError("Resolution must be a positive integer")
+        return resolution
+
+
+class AmenityFields(BaseModel):
+    """Dynamic features query fields for a specific amenity type."""
+
     amenity: str
     radius: int = Field(gt=0, description="Radius must be positive")
     penalty: int | None = Field(
@@ -42,21 +63,34 @@ class AmenityQuery(BaseModel):
         return radius
 
 
-class HexagonQuery(BaseModel):
+class AmenityQuery(Query, AmenityFields):
+    pass
+
+
+class StaticFeatureFields(BaseModel):
+    """Static features query fields for hexagons.
+    These values are comming from districts and are the same for all
+    hexagons falling into the same district."""
+
     features: list[str]
 
 
-class DataQuery(BaseModel):
-    city: str
-    nearests: list[AmenityQuery] = []
-    counts: list[AmenityQuery] = []
-    presences: list[AmenityQuery] = []
-    hexagons: HexagonQuery | None = None
+class StaticFeatureQuery(Query, StaticFeatureFields):
+    pass
+
+
+class DataQuery(Query):
+    nearests: list[AmenityFields] = []
+    counts: list[AmenityFields] = []
+    presences: list[AmenityFields] = []
+    hexagons: StaticFeatureFields | None = None
 
     def __post_model_init__(self) -> None:
-        def check(l_q: list[AmenityQuery] | HexagonQuery | None) -> bool:
+        def check(
+            l_q: list[AmenityFields] | StaticFeatureFields | None,
+        ) -> bool:
             return l_q is None or (
-                not isinstance(l_q, HexagonQuery) and len(l_q) == 0
+                not isinstance(l_q, StaticFeatureFields) and len(l_q) == 0
             )
 
         if (
@@ -68,6 +102,23 @@ class DataQuery(BaseModel):
             raise ValueError(
                 "At least one of the queries type has to be defined."
             )
+
+
+def fields_to_queries(
+    query: DataQuery,
+    type_: Literal["nearests", "counts", "presences"],
+) -> list[AmenityQuery]:
+    """Convert a list of AmenityFields to a list of AmenityQuery."""
+    return [
+        AmenityQuery(
+            city=query.city,
+            resolution=query.resolution,
+            amenity=fields.amenity,
+            radius=fields.radius,
+            penalty=fields.penalty,
+        )
+        for fields in getattr(query, type_)
+    ]
 
 
 class DBService:
@@ -168,6 +219,7 @@ class DBService:
         index = pd.Index(
             self.es_service.read.get_hexagons(
                 index_name=query.city,
+                resolution=query.resolution,
                 features=[],
                 only_location=True,
             ).keys()
@@ -175,11 +227,8 @@ class DBService:
         df = pd.DataFrame(index=index)
 
         # Process nearest distances
-        for subquery in query.nearests:
-            nearest_feature = self.calculate_nearest_distances(
-                city=query.city,
-                query=subquery,
-            )
+        for subquery in fields_to_queries(query, "nearests"):
+            nearest_feature = self.calculate_nearest_distances(query=subquery)
             df = df.join(
                 pd.Series(
                     nearest_feature,
@@ -188,9 +237,8 @@ class DBService:
             )
 
         # Process counts
-        for subquery in query.counts:
+        for subquery in fields_to_queries(query, "counts"):
             count_feature = self.count_pois_in_distance(
-                city=query.city,
                 query=subquery,
             )
             df = df.join(
@@ -201,9 +249,8 @@ class DBService:
             )
 
         # Process presences
-        for subquery in query.presences:
+        for subquery in fields_to_queries(query, "presences"):
             presence_feature = self.determine_presence_in_distance(
-                city=query.city,
                 query=subquery,
             )
             df = df.join(
@@ -217,6 +264,7 @@ class DBService:
         if query.hexagons is not None:
             hexagon_features = self.get_hexagon_static_features(
                 city=query.city,
+                resolution=query.resolution,
                 feature_columns=query.hexagons.features,
             )
             df = df.join(hexagon_features)
@@ -225,7 +273,6 @@ class DBService:
 
     def calculate_nearest_distances(
         self,
-        city: str,
         query: AmenityQuery,
     ) -> dict[HEX_ID_TYPE, float | None]:
         """Calculate nearest distances for a given amenity type.
@@ -239,10 +286,10 @@ class DBService:
         """
         nearest_distances = (
             self.redis_service.read.find_nearest_pois_to_hex_centers(
-                city=city,
+                city=query.city,
                 amenity=query.amenity,
+                resolution=query.resolution,
                 radius=query.radius,
-                unit="m",
                 count=1,
             )
         )
@@ -283,7 +330,6 @@ class DBService:
 
     def count_pois_in_distance(
         self,
-        city: str,
         query: AmenityQuery,
     ) -> dict[HEX_ID_TYPE, int]:
         """Count POIs within a given radius.
@@ -296,10 +342,10 @@ class DBService:
             Dictionary mapping hex_id to count of POIs
         """
         nearest_pois = self.redis_service.read.find_nearest_pois_to_hex_centers(
-            city=city,
+            city=query.city,
             amenity=query.amenity,
+            resolution=query.resolution,
             radius=query.radius,
-            unit="m",
             count=None,
         )
         counts = {hex_id: len(pois) for hex_id, pois in nearest_pois.items()}
@@ -307,7 +353,6 @@ class DBService:
 
     def determine_presence_in_distance(
         self,
-        city: str,
         query: AmenityQuery,
     ) -> dict[HEX_ID_TYPE, int]:
         """Determine if any POIs are present within a given radius.
@@ -321,10 +366,10 @@ class DBService:
             (1 if present, 0 if not)
         """
         nearest_pois = self.redis_service.read.find_nearest_pois_to_hex_centers(
-            city=city,
+            city=query.city,
             amenity=query.amenity,
+            resolution=query.resolution,
             radius=query.radius,
-            unit="m",
             count=None,
         )
         presence = {
@@ -337,6 +382,7 @@ class DBService:
         self,
         city: str,
         feature_columns: list[str],
+        resolution: int,
     ) -> pd.DataFrame:
         """Get static features for hexagons.
 
@@ -350,6 +396,7 @@ class DBService:
         district_data = self.es_service.read.get_hexagons(
             index_name=city,
             features=feature_columns,
+            resolution=resolution,
         )
         df = pd.DataFrame.from_dict(district_data, orient="index")
         df = df.drop(
@@ -409,70 +456,102 @@ class DBService:
         city: str,
         pois_gdf: gpd.GeoDataFrame,
         district_gdf: gpd.GeoDataFrame,
-        hex_resolution: int = 9,
+        hex_resolutions: int | list[int] = 9,
         ignore_if_index_exists: bool = True,
         es_index_mapping: dict[str, Any] = default_mapping,
     ) -> None:
-        """Upload complete city data including POIs, districts, and hexagons.
-
-        Args:
-            city: City name
-            pois_gdf: GeoDataFrame containing POIs
-            district_gdf: GeoDataFrame containing districts
-            hex_resolution: Resolution for hexagon grid
-        """
+        """Upload complete city data including POIs, districts, and hexagons."""
+        if isinstance(hex_resolutions, int):
+            hex_resolutions = [hex_resolutions]
         try:
-            # ELASTICSEARCH PART
-            self.es_service.index_manager.create_index(
-                index_name=city,
-                ignore_if_exists=ignore_if_index_exists,
-                mapping=es_index_mapping,
+            logger.info(f'UPLOADING DATA FOR CITY "{city}" ...')
+            self._upload_city_data_elasticsearch(
+                city=city,
+                pois_gdf=pois_gdf,
+                district_gdf=district_gdf,
+                hex_resolutions=hex_resolutions,
+                ignore_if_index_exists=ignore_if_index_exists,
+                es_index_mapping=es_index_mapping,
             )
-            logger.info(f'Index "{city}" created in elasticsearch.')
+            self._upload_city_data_redis(
+                city=city,
+                pois_gdf=pois_gdf,
+                district_gdf=district_gdf,
+                hex_resolutions=hex_resolutions,
+            )
+            logger.info(f"Successfully uploaded all data for city {city}.")
+        except Exception as e:
+            logger.error(f"Error uploading city data for {city}: " f"{str(e)}")
+            raise
 
-            self.es_service.write.upload_pois(index_name=city, gdf=pois_gdf)
-            logger.info(f"PoIs uploaded to elasticsearch for index {city}.")
-            self.es_service.write.upload_districts(
-                index_name=city, gdf=district_gdf
-            )
+    def _upload_city_data_elasticsearch(
+        self,
+        city: str,
+        pois_gdf: gpd.GeoDataFrame,
+        district_gdf: gpd.GeoDataFrame,
+        hex_resolutions: list[int],
+        ignore_if_index_exists: bool,
+        es_index_mapping: dict[str, Any],
+    ) -> None:
+        """Upload city data to Elasticsearch
+        (index, POIs, districts, hexagons)."""
+        logger.info(f'Creating index "{city}" in elasticsearch.')
+        self.es_service.index_manager.create_index(
+            index_name=city,
+            ignore_if_exists=ignore_if_index_exists,
+            mapping=es_index_mapping,
+        )
+        logger.info(f'Index "{city}" created in elasticsearch.')
+
+        logger.info("Uploading POIs to elasticsearch.")
+        self.es_service.write.upload_pois(index_name=city, gdf=pois_gdf)
+        logger.info("PoIs uploaded to elasticsearch.")
+        logger.info("Uploading districts to elasticsearch.")
+        self.es_service.write.upload_districts(
+            index_name=city, gdf=district_gdf
+        )
+        logger.info("Districts uploaded to elasticsearch.")
+        for hex_resolution in hex_resolutions:
             logger.info(
-                f"Districts uploaded to elasticsearch for index {city}."
+                "Uploading hexagons to elasticsearch "
+                f"with resolution {hex_resolution}."
             )
-
-            # Uploading hexagon centers
             self.es_service.write.upload_hex_centers(
                 index_name=city,
                 districts=district_gdf,
                 hex_resolution=hex_resolution,
             )
-            logger.info(
-                "Hexagons uploaded to elasticsearch " f"for index {city}."
-            )
+        logger.info("Hexagons uploaded to elasticsearch.")
 
-            # REDIS PART
-            self.redis_service.write.upload_pois_by_amenity_key(
-                city=city, pois=pois_gdf
-            )
-            logger.info(f"PoIs uploaded to redis for city {city}.")
-            self.redis_service.write.upload_pois_by_amenity_key(
-                city=city,
-                pois=pois_gdf,
-                only_wheelchair_accessible=True,
-                wheelchair_positive_values=["yes"],
-            )
+    def _upload_city_data_redis(
+        self,
+        city: str,
+        pois_gdf: gpd.GeoDataFrame,
+        district_gdf: gpd.GeoDataFrame,
+        hex_resolutions: list[int],
+    ) -> None:
+        """Upload city data to Redis (POIs, wheelchair POIs, hexagons)."""
+        logger.info(f'Creating keys for city "{city}" in redis.')
+        self.redis_service.write.upload_pois_by_amenity_key(
+            city=city, pois=pois_gdf
+        )
+        logger.info("PoIs uploaded to redis.")
+        self.redis_service.write.upload_pois_by_amenity_key(
+            city=city,
+            pois=pois_gdf,
+            only_wheelchair_accessible=True,
+            wheelchair_positive_values=["yes"],
+        )
+        logger.info("Wheelchair accessible PoIs uploaded to redis.")
+        for hex_resolution in hex_resolutions:
             logger.info(
-                f"Wheelchair accessible PoIs uploaded to redis for city {city}."
+                "Uploading hexagons to redis "
+                f"with resolution {hex_resolution}."
             )
-
             self.redis_service.write.upload_hex_centers(
                 city=city, districts=district_gdf, resolution=hex_resolution
             )
-            logger.info(f"Hexagons uploaded to redis for city {city}.")
-
-            logger.info(f"Successfully uploaded all data for city {city}")
-        except Exception as e:
-            logger.error(f"Error uploading city data for {city}: " f"{str(e)}")
-            raise
+        logger.info("Hexagons uploaded to redis.")
 
     def count_records_per_amenity(self, city: str) -> dict[str, int]:
         result = self.redis_service.read.count_records_per_key(city)

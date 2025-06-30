@@ -37,7 +37,7 @@ class RedisWriteRepository:
             )
 
         responses = pipe.execute()
-        return responses  # type: ignore[no-any-return]
+        return responses
 
     def upload_hex_centers(
         self, city: str, districts: gpd.GeoDataFrame, resolution: int = 9
@@ -50,7 +50,9 @@ class RedisWriteRepository:
             for hex_id, hex_center in district_hex_centers:
                 values += [hex_center.x, hex_center.y, hex_id]
 
-        response = self.redis_client.geoadd(city + HEX_SUFFIX, values)
+        response = self.redis_client.geoadd(
+            f"{city}_{resolution}{HEX_SUFFIX}", values
+        )
         return response
 
 

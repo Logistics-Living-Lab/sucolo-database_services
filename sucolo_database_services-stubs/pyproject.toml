@@ -1,6 +1,6 @@
 [project]
 name = "sucolo-database-services-stubs"
-version = "0.1.4"
+version = "0.2.0"
 description = "Type stubs for sucolo-database-services"
 authors = [
     {name = "Stanislaw Straburzynski", email = "sstraburzynski@gmail.com"}
@@ -21,12 +21,12 @@ classifiers = [
 ]
 keywords = ["database", "elasticsearch", "redis", "geospatial", "typing", "stubs"]
 dependencies = [
-    "sucolo-database-services>=0.1.4",
+    "sucolo-database-services>=0.2.0",
 ]
 
 [tool.poetry]
 name = "sucolo-database-services-stubs"
-version = "0.1.4"
+version = "0.2.0"
 description = "Type stubs for sucolo-database-services"
 authors = ["Stanislaw Straburzynski <sstraburzynski@gmail.com>"]
 readme = "README.md"

@@ -95,6 +95,7 @@ class ElasticsearchWriteRepository:
                     data = {
                         "type": "hex_center",
                         "hex_id": id_,
+                        "reslution": hex_resolution,
                         "location": {"lon": center.x, "lat": center.y},
                     }
                     data.update(district_features)

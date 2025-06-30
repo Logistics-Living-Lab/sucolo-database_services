@@ -4,10 +4,11 @@ from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from sucolo_database_services.db_service import (
+    AmenityFields,
     AmenityQuery,
     DataQuery,
     DBService,
-    HexagonQuery,
+    StaticFeatureFields,
 )
 from sucolo_database_services.utils.exceptions import CityNotFoundError
 
@@ -24,19 +25,33 @@ def test_city_not_found(db_service: DBService, mocker: MockerFixture) -> None:
         db_service.get_multiple_features(
             DataQuery(
                 city="nonexistent",
-                nearests=[AmenityQuery(amenity="shop", radius=1000)],
+                resolution=9,
+                nearests=[
+                    AmenityQuery(
+                        city="leipzig",
+                        resolution=9,
+                        amenity="shop",
+                        radius=1000,
+                    )
+                ],
             )
         )
 
 
 def test_invalid_radius() -> None:
     with pytest.raises(ValidationError):
-        AmenityQuery(amenity="shop", radius=-1)
+        AmenityQuery(city="leipzig", resolution=9, amenity="shop", radius=-1)
 
 
 def test_invalid_penalty() -> None:
     with pytest.raises(ValidationError):
-        AmenityQuery(amenity="shop", radius=1000, penalty=-1)
+        AmenityQuery(
+            city="leipzig",
+            resolution=9,
+            amenity="shop",
+            radius=1000,
+            penalty=-1,
+        )
 
 
 def test_get_all_indices(db_service: DBService, mocker: MockerFixture) -> None:
@@ -99,6 +114,7 @@ def test_get_hexagon_static_features(
     # Call the method
     result = db_service.get_hexagon_static_features(
         city="leipzig",
+        resolution=9,
         feature_columns=feature_columns,
     )
 
@@ -126,17 +142,20 @@ def test_get_multiple_features(
     # Create test query
     query = DataQuery(
         city="leipzig",
+        resolution=9,
         nearests=[
-            AmenityQuery(amenity="education", radius=500, penalty=100),
-            AmenityQuery(amenity="hospital", radius=1000),
+            AmenityFields(amenity="education", radius=500, penalty=100),
+            AmenityFields(amenity="hospital", radius=1000),
         ],
         counts=[
-            AmenityQuery(amenity="local_business", radius=300),
+            AmenityFields(amenity="local_business", radius=300),
         ],
         presences=[
-            AmenityQuery(amenity="station", radius=200),
+            AmenityFields(amenity="station", radius=200),
         ],
-        hexagons=HexagonQuery(features=["Employed income", "Average age"]),
+        hexagons=StaticFeatureFields(
+            features=["Employed income", "Average age"]
+        ),
     )
 
     # Mock the necessary service methods

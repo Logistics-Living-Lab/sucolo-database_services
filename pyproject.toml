@@ -1,6 +1,6 @@
 [project]
 name = "sucolo-database-services"
-version = "0.1.4"
+version = "0.2.0"
 description = "A Python client for Sucolo's database services."
 authors = [
     {name = "Stanislaw Straburzynski", email = "sstraburzynski@gmail.com"}
@@ -22,7 +22,7 @@ keywords = ["database", "elasticsearch", "redis", "geospatial"]
 
 [tool.poetry]
 name = "sucolo_database_services"
-version = "0.1.4"
+version = "0.2.0"
 description = "A Python client for Sucolo's database services."
 authors = ["Stanislaw Straburzynski <sstraburzynski@gmail.com>"]
 readme = "README.md"
@@ -149,9 +149,10 @@ isolated_build = true
 
 [testenv]
 basepython =
-    py310: /home/stanislaw/.pyenv/versions/3.10.15/bin/python
-    py311: /home/stanislaw/.pyenv/versions/3.11.10/bin/python
-    py312: /home/stanislaw/.pyenv/versions/3.12.7/bin/python
+    py310: /Users/stanislaw/.pyenv/versions/3.10.15/bin/python
+    py311: /Users/stanislaw/.pyenv/versions/3.11.10/bin/python
+    py312: /Users/stanislaw/.pyenv/versions/3.12.7/bin/python
+    py313: /Users/stanislaw/.pyenv/versions/3.13.3/bin/python
 deps =
     pytest
     pytest-cov

@@ -8,11 +8,11 @@ class RedisReadRepository:
     def __init__(self, redis_client: Redis):
         self.redis_client = redis_client
 
-    def get_hexagons(self, city: str) -> list[str]:
+    def get_hexagons(self, city: str, resolution: int) -> list[str]:
         hex_ids = [
             hex_id.decode("utf-8")
             for hex_id in self.redis_client.zrange(  # type: ignore[union-attr]
-                city + HEX_SUFFIX, 0, -1
+                f"{city}_{resolution}{HEX_SUFFIX}", 0, -1
             )
         ]
         return hex_ids
@@ -28,11 +28,11 @@ class RedisReadRepository:
         self,
         city: str,
         amenity: str,
+        resolution: int,
         radius: int = 300,
-        unit: str = "m",
         count: int | None = 1,
     ) -> dict[str, list[float]]:
-        hex_key = city + HEX_SUFFIX
+        hex_key = f"{city}_{resolution}{HEX_SUFFIX}"
         pois_key = city + "_" + amenity + POIS_SUFFIX
         check_if_keys_exist(client=self.redis_client, keys=[hex_key, pois_key])
 
@@ -42,11 +42,9 @@ class RedisReadRepository:
             hex_ids=hex_ids,  # type: ignore[arg-type]
         )
         nearest_pois = self._get_nearest_pois(
-            hex_ids=hex_ids,  # type: ignore[arg-type]
             hex_centers=hex_centers,
             pois_key=pois_key,
             radius=radius,
-            unit=unit,
             count=count,
         )
         processed_pois = self._pois_postprocessing(
@@ -63,32 +61,30 @@ class RedisReadRepository:
         for hex_id in hex_ids:
             pipeline.geopos(hex_key, hex_id)
         hex_centers = pipeline.execute()
-        return hex_centers  # type: ignore[no-any-return]
+        return hex_centers
 
     def _get_nearest_pois(
         self,
-        hex_ids: list[str],
         hex_centers: list[list[tuple[float, float]]],
         pois_key: str,
         radius: int,
-        unit: str,
         count: int | None = 1,
     ) -> list[list[tuple[bytes, float]]]:
         pipeline = self.redis_client.pipeline()
-        for hex_id, lon_lat in zip(hex_ids, hex_centers):
+        for lon_lat in hex_centers:
             lon, lat = lon_lat[0]
             pipeline.georadius(
                 name=pois_key,
                 longitude=lon,
                 latitude=lat,
                 radius=radius,
-                unit=unit,
+                unit="m",
                 withdist=True,
                 count=count,
                 sort="ASC",
             )
         nearest_pois = pipeline.execute()
-        return nearest_pois  # type: ignore[no-any-return]
+        return nearest_pois
 
     def _pois_postprocessing(
         self,

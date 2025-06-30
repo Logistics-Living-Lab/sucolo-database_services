@@ -5,7 +5,7 @@ This package provides type stubs for [sucolo-database-services](https://github.c
 ## Installation
 
 ```bash
-pip install types-sucolo-database-services
+pip install types-sucolo-database-services-stubs
 ```
 
 ## Usage
@@ -18,4 +18,4 @@ The version of this package matches the version of the main package it provides 
 
 ## License
 
-MIT License - see the LICENSE file for details 
+MIT License - see the LICENSE file for details.

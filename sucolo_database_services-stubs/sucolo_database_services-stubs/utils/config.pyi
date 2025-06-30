@@ -1,7 +1,7 @@
 from enum import Enum
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 class Environment(str, Enum):
     DEVELOPMENT = "development"
@@ -20,10 +20,9 @@ class DatabaseConfig(BaseModel):
     def validate_ca_certs(cls, v: Path) -> Path: ...
 
 class LoggingConfig(BaseModel):
-    level: str = Field(default="INFO")
-    format: str = Field(
-        default="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    file: Path | None = Field(default=None)
+    level: str
+    format: str
+    file: Path | None
 
 class Config(BaseModel):
     environment: Environment
