@@ -1,6 +1,6 @@
 import pytest
 
-from sucolo_database_services.db_service import DBService
+from sucolo_database_services.data_access import DataAccess
 from sucolo_database_services.utils.config import (
     Config,
     DatabaseConfig,
@@ -24,5 +24,5 @@ def config() -> Config:
 
 
 @pytest.fixture
-def db_service(config: Config) -> DBService:
-    return DBService(config)
+def data_access(config: Config) -> DataAccess:
+    return DataAccess(config)

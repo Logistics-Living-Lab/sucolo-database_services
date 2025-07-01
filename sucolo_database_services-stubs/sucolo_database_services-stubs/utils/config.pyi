@@ -1,12 +1,16 @@
+from typing import Optional
+
 from enum import Enum
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
 
 class Environment(str, Enum):
     DEVELOPMENT = "development"
     TESTING = "testing"
     PRODUCTION = "production"
+
 
 class DatabaseConfig(BaseModel):
     elastic_host: str
@@ -19,10 +23,20 @@ class DatabaseConfig(BaseModel):
     ca_certs: Path
     def validate_ca_certs(cls, v: Path) -> Path: ...
 
+
 class LoggingConfig(BaseModel):
-    level: str
-    format: str
-    file: Path | None
+    level: str = Field(
+        default="INFO",
+        description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+    )
+    format: str = Field(
+        default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        description="Logging format string",
+    )
+    file: Optional[Path] = Field(
+        default=None, description="Optional log file path"
+    )
+
 
 class Config(BaseModel):
     environment: Environment
