@@ -12,8 +12,8 @@ from sucolo_database_services.redis_client.write_repository import (
 )
 
 class RedisService:
-    redis_client: Incomplete
     keys_manager: Incomplete
     read: Incomplete
     write: Incomplete
     def __init__(self, redis_client: Redis) -> None: ...
+    def check_health(self) -> bool: ...

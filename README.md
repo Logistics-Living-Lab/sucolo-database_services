@@ -18,18 +18,21 @@ A Python package providing database services for the Sucolo project, including E
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/yourusername/sucolo-database_services.git
 cd sucolo-database_services
 ```
 
-2. Install dependencies using Poetry:
+1. Install dependencies using Poetry:
+
 ```bash
 poetry install
 ```
 
-3. Set up your environment variables in `.env` file:
-```
+1. Set up your environment variables in `.env` file:
+
+```bash
 # Example .env configuration
 ELASTICSEARCH_HOST=localhost
 ELASTICSEARCH_PORT=9200
@@ -49,6 +52,7 @@ This project uses several tools to maintain code quality:
 - isort for import sorting
 
 Run the following command to format and check the code:
+
 ```bash
 make format
 ```
@@ -56,24 +60,28 @@ make format
 ### Testing
 
 Run tests using pytest:
+
 ```bash
 make test
 ```
 
 ## Project Structure
 
-```
+```bash
 sucolo_database_services/
-├── elasticsearch_client/  # Elasticsearch client implementation
-├── redis_client/         # Redis client implementation
-├── utils/                # Utility functions and helpers
-├── tests/                # Test suite
-└── db_service.py         # Main database service implementation
+├── elasticsearch_client/     # Elasticsearch client implementation
+├── redis_client/             # Redis client implementation
+├── services/                 # Service layer (feature, metadata, management, etc.)
+├── utils/                    # Utility functions and helpers
+├── tests/                    # Test suite for all services and modules
+├── data_access.py            # Aggregated data access layer
+└── __init__.py
 ```
 
 ## Dependencies
 
 Main dependencies:
+
 - elasticsearch
 - redis
 - pandas

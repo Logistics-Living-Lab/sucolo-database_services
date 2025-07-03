@@ -12,9 +12,9 @@ from sucolo_database_services.elasticsearch_client.write_repository import (
 )
 
 class ElasticsearchService:
-    es: Incomplete
     index_manager: Incomplete
     read: Incomplete
     write: Incomplete
     def __init__(self, es_client: Elasticsearch) -> None: ...
     def get_all_indices(self) -> list[str]: ...
+    def check_health(self) -> bool: ...
