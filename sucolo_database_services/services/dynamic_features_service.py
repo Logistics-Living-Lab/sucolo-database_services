@@ -24,13 +24,15 @@ class DynamicFeaturesService(BaseService):
         query: AmenityQuery,
     ) -> dict[HEX_ID_TYPE, float | None]:
         """Calculate nearest distances for a given amenity type.
+        If a POIS isn't found within the radius,
+        return radius + penalty or None if penalty is None.
 
         Args:
             city: City name
             query: AmenityQuery containing amenity type and search parameters
 
         Returns:
-            Dictionary mapping hex_id to nearest distance or None
+            Dictionary mapping hex_id to nearest distance.
         """
         nearest_distances = (
             self._redis_service.read.find_nearest_pois_to_hex_centers(
@@ -55,6 +57,8 @@ class DynamicFeaturesService(BaseService):
         penalty: int | None,
     ) -> dict[str, float | None]:
         """Post-process nearest distances with optional penalty.
+        If POI is found, return the first distance;
+        if not found, return radius + penalty or None if penalty is None.
 
         Args:
             nearest_distances: Dictionary of hex_id to list of distances
@@ -64,16 +68,20 @@ class DynamicFeaturesService(BaseService):
         Returns:
             Dictionary mapping hex_id to processed distance
         """
-        if penalty is None:
-            first_nearest_distances = {
-                hex_id: (dists[0] if len(dists) > 0 else None)
-                for hex_id, dists in nearest_distances.items()
-            }
-        else:
-            first_nearest_distances = {
-                hex_id: (dists[0] if len(dists) > 0 else radius + penalty)
-                for hex_id, dists in nearest_distances.items()
-            }
+
+        def _get_distance(dists: list[float]) -> float | None:
+            if len(dists) > 0:
+                return dists[0]
+            else:
+                if penalty is not None:
+                    return radius + penalty
+                else:
+                    return None
+
+        first_nearest_distances = {
+            hex_id: _get_distance(dists)
+            for hex_id, dists in nearest_distances.items()
+        }
         return first_nearest_distances
 
     def count_pois_in_distance(
