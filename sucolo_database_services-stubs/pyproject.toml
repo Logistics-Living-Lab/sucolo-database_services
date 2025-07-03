@@ -1,0 +1,58 @@
+[project]
+name = "sucolo-database-services-stubs"
+version = "0.3.0"
+description = "Type stubs for sucolo-database-services"
+authors = [
+    {name = "Stanislaw Straburzynski", email = "sstraburzynski@gmail.com"}
+]
+requires-python = ">=3.10,<3.14"
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Stubs Only",
+]
+keywords = ["database", "elasticsearch", "redis", "geospatial", "typing", "stubs"]
+dependencies = [
+    "sucolo-database-services>=0.2.0",
+]
+
+[tool.poetry]
+name = "sucolo-database-services-stubs"
+version = "0.3.0"
+description = "Type stubs for sucolo-database-services"
+authors = ["Stanislaw Straburzynski <sstraburzynski@gmail.com>"]
+readme = "README.md"
+license = "MIT"
+packages = [{include = "sucolo_database_services-stubs"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Stubs Only",
+]
+keywords = ["database", "elasticsearch", "redis", "geospatial", "typing", "stubs"]
+homepage = "https://github.com/Stashq/sucolo-database_services"
+repository = "https://github.com/Stashq/sucolo-database_services.git"
+documentation = "https://github.com/Stashq/sucolo-database_services#readme"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.14"
+sucolo-database-services = ">=0.1.4"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api" 
