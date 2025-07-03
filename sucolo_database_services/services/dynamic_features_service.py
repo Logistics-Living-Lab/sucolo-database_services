@@ -17,7 +17,7 @@ class DynamicFeaturesService(BaseService):
         self,
         base_service_dependencies: BaseServiceDependencies,
     ) -> None:
-        super().__init__(base_service_dependencies)
+        super(DynamicFeaturesService, self).__init__(base_service_dependencies)
 
     def calculate_nearest_distances(
         self,

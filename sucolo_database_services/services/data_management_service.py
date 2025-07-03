@@ -129,7 +129,14 @@ class _Upload(BaseService):
         hex_resolutions: int | list[int],
         data_dir: Path = Path("data"),
     ) -> None:
-        """Upload city data to the database."""
+        """Upload city data to the database from files.
+        Assumes that Points of Interest (POIs) and districts are stored
+        in GeoJSON files in the specified directory structure:
+        <data_dir>/
+            <city>/
+                pois.geojson
+                districts.geojson
+        """
         pois_gdf, district_gdf = self._load_city_data(
             city=city, data_dir=data_dir
         )
@@ -144,7 +151,14 @@ class _Upload(BaseService):
     def _load_city_data(
         self, city: str, data_dir: Path = Path("data")
     ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-        """Get city data from files."""
+        """Get city data from files.
+        Assumes that Points of Interest (POIs) and districts are stored
+        in GeoJSON files in the specified directory structure:
+        <data_dir>/
+            <city>/
+                pois.geojson
+                districts.geojson
+        """
         pois_path = data_dir / f"{city}/pois.geojson"
         districts_path = data_dir / f"{city}/districts.geojson"
 
@@ -209,4 +223,4 @@ class DataManagementService(_Upload, _Delete):
         self,
         base_service_dependencies: BaseServiceDependencies,
     ) -> None:
-        super().__init__(base_service_dependencies)
+        super(DataManagementService, self).__init__(base_service_dependencies)

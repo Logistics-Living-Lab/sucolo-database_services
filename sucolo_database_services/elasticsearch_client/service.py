@@ -16,18 +16,24 @@ class ElasticsearchService:
         self,
         es_client: Elasticsearch,
     ) -> None:
-        self.es = es_client
-        self.index_manager = ElasticsearchIndexManager(es_client=es_client)
+        self._es_client = es_client
+        self.index_manager = ElasticsearchIndexManager(
+            es_client=self._es_client
+        )
         self.read = ElasticsearchReadRepository(
-            es_client=es_client,
+            es_client=self._es_client,
         )
         self.write = ElasticsearchWriteRepository(
-            es_client=es_client,
+            es_client=self._es_client,
         )
 
     def get_all_indices(
         self,
     ) -> list[str]:
-        return self.es.indices.get_alias(  # type: ignore[return-value]
+        return self._es_client.indices.get_alias(  # type: ignore[return-value]
             index="*"
         )
+
+    def check_health(self) -> bool:
+        """Check if Elasticsearch is reachable."""
+        return self._es_client.ping()

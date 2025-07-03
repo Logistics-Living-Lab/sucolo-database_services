@@ -19,6 +19,9 @@ from sucolo_database_services.services.district_features_service import (
 from sucolo_database_services.services.dynamic_features_service import (
     DynamicFeaturesService,
 )
+from sucolo_database_services.services.health_check_service import (
+    HealthCheckService,
+)
 from sucolo_database_services.services.metadata_service import MetadataService
 from sucolo_database_services.services.multiple_features_service import (
     MultipleFeaturesService,
@@ -26,13 +29,7 @@ from sucolo_database_services.services.multiple_features_service import (
 from sucolo_database_services.utils.config import Config, LoggingConfig
 
 
-class DataAccess(
-    DynamicFeaturesService,
-    DistrictFeaturesService,
-    DataManagementService,
-    MultipleFeaturesService,
-    MetadataService,
-):
+class DataAccess:
     """Service for managing database operations across Elasticsearch and Redis.
 
     This service provides methods for querying and managing geographical data,
@@ -53,7 +50,7 @@ class DataAccess(
         ), f"File {config.database.ca_certs} not found."
 
         self.logger = self._get_logger(config.logging)
-        self.es_service = ElasticsearchService(
+        self._es_service = ElasticsearchService(
             Elasticsearch(
                 hosts=[config.database.elastic_host],
                 basic_auth=(
@@ -64,7 +61,7 @@ class DataAccess(
                 timeout=config.database.elastic_timeout,
             )
         )
-        self.redis_service = RedisService(
+        self._redis_service = RedisService(
             Redis(
                 host=config.database.redis_host,
                 port=config.database.redis_port,
@@ -73,20 +70,38 @@ class DataAccess(
         )
 
         base_service_dependencies = BaseServiceDependencies(
-            es_service=self.es_service,
-            redis_service=self.redis_service,
+            es_service=self._es_service,
+            redis_service=self._redis_service,
             logger=self.logger,
         )
-        super().__init__(base_service_dependencies)
+        self.dynamic_features = DynamicFeaturesService(
+            base_service_dependencies
+        )
+        self.district_features = DistrictFeaturesService(
+            base_service_dependencies
+        )
+        self.data_management = DataManagementService(base_service_dependencies)
+        self.metadata = MetadataService(base_service_dependencies)
+        self.health_check = HealthCheckService(base_service_dependencies)
 
-    def _get_logger(self, logging_config: LoggingConfig) -> None:
+        self.multiple_features = MultipleFeaturesService(
+            base_service_dependencies=base_service_dependencies,
+            metadata_service=self.metadata,
+            dynamic_features_service=self.dynamic_features,
+            district_features_service=self.district_features,
+        )
+
+    def _get_logger(self, logging_config: LoggingConfig) -> logging.Logger:
         """Set the logger configuration."""
-        self.logger.setLevel(logging_config.level)
+        logger = logging.getLogger("sucolo_database_services")
+        logger.setLevel(logging_config.level)
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter(logging_config.format))
-        self.logger.addHandler(handler)
+        logger.addHandler(handler)
 
         if logging_config.file:
             file_handler = logging.FileHandler(logging_config.file)
             file_handler.setFormatter(logging.Formatter(logging_config.format))
-            self.logger.addHandler(file_handler)
+            logger.addHandler(file_handler)
+
+        return logger

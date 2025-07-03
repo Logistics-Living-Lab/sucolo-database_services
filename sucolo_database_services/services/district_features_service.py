@@ -11,9 +11,9 @@ class DistrictFeaturesService(BaseService):
         self,
         base_service_dependencies: BaseServiceDependencies,
     ) -> None:
-        super().__init__(base_service_dependencies)
+        super(DistrictFeaturesService, self).__init__(base_service_dependencies)
 
-    def get_hexagon_static_features(
+    def get_hexagon_district_features(
         self,
         city: str,
         feature_columns: list[str],

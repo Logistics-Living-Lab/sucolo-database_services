@@ -18,7 +18,7 @@ class MetadataService(BaseService):
         self,
         base_service_dependencies: BaseServiceDependencies,
     ) -> None:
-        super().__init__(base_service_dependencies)
+        super(MetadataService, self).__init__(base_service_dependencies)
 
     def get_cities(self) -> list[str]:
         """Get list of all available cities."""

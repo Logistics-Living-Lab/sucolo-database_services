@@ -16,13 +16,13 @@ from sucolo_database_services.utils.exceptions import CityNotFoundError
 def test_city_not_found(data_access: DataAccess, mocker: MockerFixture) -> None:
     # Mock get_cities to return empty list
     mocker.patch.object(
-        data_access,
+        data_access.metadata,
         "get_cities",
         return_value=[],
     )
 
     with pytest.raises(CityNotFoundError):
-        data_access.get_multiple_features(
+        data_access.multiple_features.get_features(
             MultipleFeaturesQuery(
                 city="nonexistent",
                 resolution=9,
@@ -59,12 +59,12 @@ def test_get_all_indices(
 ) -> None:
     # Mock Elasticsearch service
     mocker.patch.object(
-        data_access.es_service,
+        data_access._es_service,
         "get_all_indices",
         return_value=["city1", "city2"],
     )
 
-    data_access.get_cities()
+    data_access.metadata.get_cities()
 
 
 def test_get_hexagon_static_features(
@@ -72,7 +72,7 @@ def test_get_hexagon_static_features(
 ) -> None:
     # Mock the get_hexagon_static_features method
     mocker.patch.object(
-        data_access.es_service.read,
+        data_access._es_service.read,
         "get_hexagons",
         return_value={
             "hex1": {
@@ -114,7 +114,7 @@ def test_get_hexagon_static_features(
     feature_columns = ["Employed income", "Average age"]
 
     # Call the method
-    result = data_access.get_hexagon_static_features(
+    result = data_access.district_features.get_hexagon_district_features(
         city="leipzig",
         resolution=9,
         feature_columns=feature_columns,
@@ -129,13 +129,13 @@ def test_get_hexagon_static_features(
 def test_error_handling(data_access: DataAccess, mocker: MockerFixture) -> None:
     # Mock Redis service to raise an error
     mocker.patch.object(
-        data_access.redis_service.keys_manager,
+        data_access._redis_service.keys_manager,
         "get_city_keys",
         side_effect=Exception("Test error"),
     )
 
     with pytest.raises(Exception):
-        data_access.get_amenities("city1")
+        data_access.metadata.get_amenities("city1")
 
 
 def test_get_multiple_features(
@@ -162,12 +162,12 @@ def test_get_multiple_features(
 
     # Mock the necessary service methods
     mock_get_cities = mocker.patch.object(
-        data_access,
+        data_access.metadata,
         "get_cities",
         return_value=["leipzig"],
     )
     mock_get_hexagons = mocker.patch.object(
-        data_access.es_service.read,
+        data_access._es_service.read,
         "get_hexagons",
         return_value={
             "8963b10664bffff": {
@@ -191,7 +191,7 @@ def test_get_multiple_features(
         },
     )
     mock_calculate_nearests_distances = mocker.patch.object(
-        data_access,
+        data_access.dynamic_features,
         "calculate_nearest_distances",
         return_value={
             "8963b10664bffff": 150,
@@ -200,7 +200,7 @@ def test_get_multiple_features(
         },
     )
     mock_count_pois_in_distance = mocker.patch.object(
-        data_access,
+        data_access.dynamic_features,
         "count_pois_in_distance",
         return_value={
             "8963b10664bffff": 10,
@@ -209,7 +209,7 @@ def test_get_multiple_features(
         },
     )
     mock_determine_presence_in_distance = mocker.patch.object(
-        data_access,
+        data_access.dynamic_features,
         "determine_presence_in_distance",
         return_value={
             "8963b10664bffff": 1,
@@ -217,9 +217,9 @@ def test_get_multiple_features(
             "8963b1071d7ffff": 1,
         },
     )
-    mock_get_hexagon_static_features = mocker.patch.object(
-        data_access,
-        "get_hexagon_static_features",
+    mock_get_hexagon_district_features = mocker.patch.object(
+        data_access.district_features,
+        "get_hexagon_district_features",
         return_value=pd.DataFrame(
             {
                 "Employed income": [10000, 20000, 30000],
@@ -233,7 +233,7 @@ def test_get_multiple_features(
     )
 
     # Call the method
-    df = data_access.get_multiple_features(query)
+    df = data_access.multiple_features.get_features(query)
 
     # Verify the result is a DataFrame
     assert isinstance(df, pd.DataFrame)
@@ -261,4 +261,4 @@ def test_get_multiple_features(
     mock_calculate_nearests_distances.assert_called()
     mock_count_pois_in_distance.assert_called()
     mock_determine_presence_in_distance.assert_called()
-    mock_get_hexagon_static_features.assert_called()
+    mock_get_hexagon_district_features.assert_called()
