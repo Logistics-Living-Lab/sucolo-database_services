@@ -30,6 +30,6 @@ class BaseService(abc.ABC):
         self,
         base_service_dependencies: BaseServiceDependencies,
     ) -> None:
-        self.es_service = base_service_dependencies.es_service
-        self.redis_service = base_service_dependencies.redis_service
-        self.logger = base_service_dependencies.logger
+        self._es_service = base_service_dependencies.es_service
+        self._redis_service = base_service_dependencies.redis_service
+        self._logger = base_service_dependencies.logger

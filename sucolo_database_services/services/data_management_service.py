@@ -32,7 +32,7 @@ class _Upload(BaseService):
         if isinstance(hex_resolutions, int):
             hex_resolutions = [hex_resolutions]
         try:
-            self.logger.info(f'UPLOADING DATA FOR CITY "{city}" ...')
+            self._logger.info(f'UPLOADING DATA FOR CITY "{city}" ...')
             self._upload_city_data_elasticsearch(
                 city=city,
                 pois_gdf=pois_gdf,
@@ -47,9 +47,11 @@ class _Upload(BaseService):
                 district_gdf=district_gdf,
                 hex_resolutions=hex_resolutions,
             )
-            self.logger.info(f"Successfully uploaded all data for city {city}.")
+            self._logger.info(
+                f"Successfully uploaded all data for city {city}."
+            )
         except Exception as e:
-            self.logger.error(
+            self._logger.error(
                 f"Error uploading city data for {city}: " f"{str(e)}"
             )
             raise
@@ -65,33 +67,33 @@ class _Upload(BaseService):
     ) -> None:
         """Upload city data to Elasticsearch
         (index, POIs, districts, hexagons)."""
-        self.logger.info(f'Creating index "{city}" in elasticsearch.')
-        self.es_service.index_manager.create_index(
+        self._logger.info(f'Creating index "{city}" in elasticsearch.')
+        self._es_service.index_manager.create_index(
             index_name=city,
             ignore_if_exists=ignore_if_index_exists,
             mapping=es_index_mapping,
         )
-        self.logger.info(f'Index "{city}" created in elasticsearch.')
+        self._logger.info(f'Index "{city}" created in elasticsearch.')
 
-        self.logger.info("Uploading POIs to elasticsearch.")
-        self.es_service.write.upload_pois(index_name=city, gdf=pois_gdf)
-        self.logger.info("PoIs uploaded to elasticsearch.")
-        self.logger.info("Uploading districts to elasticsearch.")
-        self.es_service.write.upload_districts(
+        self._logger.info("Uploading POIs to elasticsearch.")
+        self._es_service.write.upload_pois(index_name=city, gdf=pois_gdf)
+        self._logger.info("PoIs uploaded to elasticsearch.")
+        self._logger.info("Uploading districts to elasticsearch.")
+        self._es_service.write.upload_districts(
             index_name=city, gdf=district_gdf
         )
-        self.logger.info("Districts uploaded to elasticsearch.")
+        self._logger.info("Districts uploaded to elasticsearch.")
         for hex_resolution in hex_resolutions:
-            self.logger.info(
+            self._logger.info(
                 "Uploading hexagons to elasticsearch "
                 f"with resolution {hex_resolution}."
             )
-            self.es_service.write.upload_hex_centers(
+            self._es_service.write.upload_hex_centers(
                 index_name=city,
                 districts=district_gdf,
                 hex_resolution=hex_resolution,
             )
-        self.logger.info("Hexagons uploaded to elasticsearch.")
+        self._logger.info("Hexagons uploaded to elasticsearch.")
 
     def _upload_city_data_redis(
         self,
@@ -101,27 +103,27 @@ class _Upload(BaseService):
         hex_resolutions: list[int],
     ) -> None:
         """Upload city data to Redis (POIs, wheelchair POIs, hexagons)."""
-        self.logger.info(f'Creating keys for city "{city}" in redis.')
-        self.redis_service.write.upload_pois_by_amenity_key(
+        self._logger.info(f'Creating keys for city "{city}" in redis.')
+        self._redis_service.write.upload_pois_by_amenity_key(
             city=city, pois=pois_gdf
         )
-        self.logger.info("PoIs uploaded to redis.")
-        self.redis_service.write.upload_pois_by_amenity_key(
+        self._logger.info("PoIs uploaded to redis.")
+        self._redis_service.write.upload_pois_by_amenity_key(
             city=city,
             pois=pois_gdf,
             only_wheelchair_accessible=True,
             wheelchair_positive_values=["yes"],
         )
-        self.logger.info("Wheelchair accessible PoIs uploaded to redis.")
+        self._logger.info("Wheelchair accessible PoIs uploaded to redis.")
         for hex_resolution in hex_resolutions:
-            self.logger.info(
+            self._logger.info(
                 "Uploading hexagons to redis "
                 f"with resolution {hex_resolution}."
             )
-            self.redis_service.write.upload_hex_centers(
+            self._redis_service.write.upload_hex_centers(
                 city=city, districts=district_gdf, resolution=hex_resolution
             )
-        self.logger.info("Hexagons uploaded to redis.")
+        self._logger.info("Hexagons uploaded to redis.")
 
     def upload_city_data_from_files(
         self,
@@ -197,16 +199,16 @@ class _Delete(BaseService):
                 doesn't exist
         """
         try:
-            self.es_service.index_manager.delete_index(
+            self._es_service.index_manager.delete_index(
                 index_name=city,
                 ignore_if_index_not_exist=ignore_if_index_not_exist,
             )
-            self.logger.info(f'Elasticsearch data for city "{city}" deleted.')
+            self._logger.info(f'Elasticsearch data for city "{city}" deleted.')
 
-            self.redis_service.keys_manager.delete_city_keys(city)
-            self.logger.info(f'Redis data for city "{city}" deleted.')
+            self._redis_service.keys_manager.delete_city_keys(city)
+            self._logger.info(f'Redis data for city "{city}" deleted.')
         except Exception as e:
-            self.logger.error(
+            self._logger.error(
                 f"Error deleting city data for {city}: " f"{str(e)}"
             )
             raise

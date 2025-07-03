@@ -28,7 +28,7 @@ class DistrictFeaturesService(BaseService):
         Returns:
             DataFrame containing the requested features
         """
-        district_data = self.es_service.read.get_hexagons(
+        district_data = self._es_service.read.get_hexagons(
             index_name=city,
             features=feature_columns,
             resolution=resolution,

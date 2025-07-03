@@ -23,18 +23,18 @@ class MetadataService(BaseService):
     def get_cities(self) -> list[str]:
         """Get list of all available cities."""
 
-        cities = self.es_service.get_all_indices()
+        cities = self._es_service.get_all_indices()
         cities = list(filter(lambda city: city[0] != ".", cities))
         return cities
 
     def city_data_exists(self, city: str) -> bool:
         """Check if city data exists in Elasticsearch."""
-        return self.es_service.index_manager.index_exists(city)
+        return self._es_service.index_manager.index_exists(city)
 
     def get_amenities(self, city: str) -> list[str]:
         """Get list of all amenities for a given city."""
 
-        city_keys = self.redis_service.keys_manager.get_city_keys(city)
+        city_keys = self._redis_service.keys_manager.get_city_keys(city)
         poi_keys = list(
             filter(
                 lambda key: key[-len(POIS_SUFFIX) :] == POIS_SUFFIX,
@@ -52,7 +52,7 @@ class MetadataService(BaseService):
     def get_district_attributes(self, city: str) -> list[str]:
         """Get list of all district attributes for a given city."""
 
-        district_data = self.es_service.read.get_districts(
+        district_data = self._es_service.read.get_districts(
             index_name=city,
         )
         df = pd.DataFrame.from_dict(district_data, orient="index")

@@ -16,15 +16,15 @@ class HealthCheckService(BaseService):
     def check_elasticsearch(self) -> bool:
         """Check if Elasticsearch is reachable."""
         try:
-            return self.es_service.check_health()
+            return self._es_service.check_health()
         except Exception as e:
-            self.logger.error(f"Elasticsearch health check failed: {e}")
+            self._logger.error(f"Elasticsearch health check failed: {e}")
             return False
 
     def check_redis(self) -> bool:
         """Check if Redis is reachable."""
         try:
-            return self.redis_service.check_health()
+            return self._redis_service.check_health()
         except Exception as e:
-            self.logger.error(f"Redis health check failed: {e}")
+            self._logger.error(f"Redis health check failed: {e}")
             return False

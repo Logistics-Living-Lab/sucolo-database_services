@@ -47,7 +47,7 @@ class MultipleFeaturesService(BaseService):
             raise CityNotFoundError(f"City {query.city} not found")
 
         index = pd.Index(
-            self.es_service.read.get_hexagons(
+            self._es_service.read.get_hexagons(
                 index_name=query.city,
                 resolution=query.resolution,
                 features=[],

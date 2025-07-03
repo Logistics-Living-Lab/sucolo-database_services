@@ -33,7 +33,7 @@ class DynamicFeaturesService(BaseService):
             Dictionary mapping hex_id to nearest distance or None
         """
         nearest_distances = (
-            self.redis_service.read.find_nearest_pois_to_hex_centers(
+            self._redis_service.read.find_nearest_pois_to_hex_centers(
                 city=query.city,
                 amenity=query.amenity,
                 resolution=query.resolution,
@@ -89,12 +89,14 @@ class DynamicFeaturesService(BaseService):
         Returns:
             Dictionary mapping hex_id to count of POIs
         """
-        nearest_pois = self.redis_service.read.find_nearest_pois_to_hex_centers(
-            city=query.city,
-            amenity=query.amenity,
-            resolution=query.resolution,
-            radius=query.radius,
-            count=None,
+        nearest_pois = (
+            self._redis_service.read.find_nearest_pois_to_hex_centers(
+                city=query.city,
+                amenity=query.amenity,
+                resolution=query.resolution,
+                radius=query.radius,
+                count=None,
+            )
         )
         counts = {hex_id: len(pois) for hex_id, pois in nearest_pois.items()}
         return counts
@@ -113,12 +115,14 @@ class DynamicFeaturesService(BaseService):
             Dictionary mapping hex_id to presence indicator
             (1 if present, 0 if not)
         """
-        nearest_pois = self.redis_service.read.find_nearest_pois_to_hex_centers(
-            city=query.city,
-            amenity=query.amenity,
-            resolution=query.resolution,
-            radius=query.radius,
-            count=None,
+        nearest_pois = (
+            self._redis_service.read.find_nearest_pois_to_hex_centers(
+                city=query.city,
+                amenity=query.amenity,
+                resolution=query.resolution,
+                radius=query.radius,
+                count=None,
+            )
         )
         presence = {
             hex_id: (1 if len(pois) > 0 else 0)
