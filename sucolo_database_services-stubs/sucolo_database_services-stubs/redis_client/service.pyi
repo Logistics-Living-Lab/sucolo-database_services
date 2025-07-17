@@ -1,19 +1,19 @@
-from _typeshed import Incomplete
-from redis import Redis as Redis
+from redis import Redis
 
 from sucolo_database_services.redis_client.keys_manager import (
-    RedisKeysManager as RedisKeysManager,
+    RedisKeysManager
 )
 from sucolo_database_services.redis_client.read_repository import (
-    RedisReadRepository as RedisReadRepository,
+    RedisReadRepository
 )
 from sucolo_database_services.redis_client.write_repository import (
-    RedisWriteRepository as RedisWriteRepository,
+    RedisWriteRepository
 )
 
+
 class RedisService:
-    keys_manager: Incomplete
-    read: Incomplete
-    write: Incomplete
+    keys_manager: RedisKeysManager
+    read: RedisReadRepository
+    write: RedisWriteRepository
     def __init__(self, redis_client: Redis) -> None: ...
     def check_health(self) -> bool: ...

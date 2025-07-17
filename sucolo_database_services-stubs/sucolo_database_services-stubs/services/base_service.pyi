@@ -9,12 +9,14 @@ from sucolo_database_services.redis_client.service import (
     RedisService as RedisService,
 )
 
+
 @dataclass
 class BaseServiceDependencies:
     es_service: ElasticsearchService
     redis_service: RedisService
     logger: Logger
     def __post_init__(self) -> None: ...
+
 
 class BaseService(abc.ABC):
     def __init__(

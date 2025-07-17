@@ -1,9 +1,10 @@
 from sucolo_database_services.services.base_service import (
-    BaseService as BaseService,
+    BaseService
 )
 from sucolo_database_services.services.base_service import (
-    BaseServiceDependencies as BaseServiceDependencies,
+    BaseServiceDependencies
 )
+
 
 class HealthCheckService(BaseService):
     def __init__(

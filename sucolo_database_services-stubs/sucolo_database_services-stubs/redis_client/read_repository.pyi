@@ -1,21 +1,12 @@
-from _typeshed import Incomplete
-from redis import Redis as Redis
+from redis import Redis
 
-from sucolo_database_services.redis_client.consts import (
-    HEX_SUFFIX as HEX_SUFFIX,
-)
-from sucolo_database_services.redis_client.consts import (
-    POIS_SUFFIX as POIS_SUFFIX,
-)
-from sucolo_database_services.redis_client.utils import (
-    check_if_keys_exist as check_if_keys_exist,
-)
 
 class RedisReadRepository:
-    redis_client: Incomplete
+    redis_client: Redis
     def __init__(self, redis_client: Redis) -> None: ...
     def get_hexagons(self, city: str, resolution: int) -> list[str]: ...
     def count_records_per_key(self, city: str) -> dict[str, int]: ...
+
     def find_nearest_pois_to_hex_centers(
         self,
         city: str,

@@ -166,29 +166,14 @@ def test_get_multiple_features(
         "get_cities",
         return_value=["leipzig"],
     )
-    mock_get_hexagons = mocker.patch.object(
-        data_access._es_service.read,
+    mock_get_hex_centers = mocker.patch.object(
+        data_access._redis_service.read,
         "get_hexagons",
-        return_value={
-            "8963b10664bffff": {
-                "hex_id": "8963b10664bffff",
-                "location": {
-                    "lon": 12.425527217738386,
-                    "lat": 51.382521836344374,
-                },
-            },
-            "8963b10625bffff": {
-                "hex_id": "8963b10625bffff",
-                "location": {"lon": 12.4097606740623, "lat": 51.38639802985562},
-            },
-            "8963b1071d7ffff": {
-                "hex_id": "8963b1071d7ffff",
-                "location": {
-                    "lon": 12.403503987504541,
-                    "lat": 51.377776335191605,
-                },
-            },
-        },
+        return_value=[
+            "8963b10664bffff",
+            "8963b10625bffff",
+            "8963b1071d7ffff",
+        ],
     )
     mock_calculate_nearests_distances = mocker.patch.object(
         data_access.dynamic_features,
@@ -257,7 +242,7 @@ def test_get_multiple_features(
 
     # Verify each service method was called with correct parameters
     mock_get_cities.assert_called()
-    mock_get_hexagons.assert_called()
+    mock_get_hex_centers.assert_called()
     mock_calculate_nearests_distances.assert_called()
     mock_count_pois_in_distance.assert_called()
     mock_determine_presence_in_distance.assert_called()

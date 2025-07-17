@@ -1,12 +1,10 @@
-from sucolo_database_services.redis_client.consts import (
-    POIS_SUFFIX as POIS_SUFFIX,
+from sucolo_database_services.services.base_service import (
+    BaseService
 )
 from sucolo_database_services.services.base_service import (
-    BaseService as BaseService,
+    BaseServiceDependencies
 )
-from sucolo_database_services.services.base_service import (
-    BaseServiceDependencies as BaseServiceDependencies,
-)
+
 
 class MetadataService(BaseService):
     def __init__(

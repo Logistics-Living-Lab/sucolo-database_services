@@ -1,41 +1,32 @@
-from _typeshed import Incomplete
+from logging import Logger
 
-from sucolo_database_services.elasticsearch_client.service import (
-    ElasticsearchService as ElasticsearchService,
-)
-from sucolo_database_services.redis_client.service import (
-    RedisService as RedisService,
-)
-from sucolo_database_services.services.base_service import (
-    BaseServiceDependencies as BaseServiceDependencies,
-)
 from sucolo_database_services.services.data_management_service import (
-    DataManagementService as DataManagementService,
+    DataManagementService
 )
 from sucolo_database_services.services.district_features_service import (
-    DistrictFeaturesService as DistrictFeaturesService,
+    DistrictFeaturesService
 )
 from sucolo_database_services.services.dynamic_features_service import (
-    DynamicFeaturesService as DynamicFeaturesService,
+    DynamicFeaturesService
 )
 from sucolo_database_services.services.health_check_service import (
-    HealthCheckService as HealthCheckService,
+    HealthCheckService
 )
 from sucolo_database_services.services.metadata_service import (
-    MetadataService as MetadataService,
+    MetadataService
 )
 from sucolo_database_services.services.multiple_features_service import (
-    MultipleFeaturesService as MultipleFeaturesService,
+    MultipleFeaturesService
 )
 from sucolo_database_services.utils.config import Config as Config
-from sucolo_database_services.utils.config import LoggingConfig as LoggingConfig
+
 
 class DataAccess:
-    logger: Incomplete
-    dynamic_features: Incomplete
-    district_features: Incomplete
-    data_management: Incomplete
-    metadata: Incomplete
-    health_check: Incomplete
-    multiple_features: Incomplete
+    logger: Logger
+    dynamic_features: DynamicFeaturesService
+    district_features: DistrictFeaturesService
+    data_management: DataManagementService
+    metadata: MetadataService
+    health_check: HealthCheckService
+    multiple_features: MultipleFeaturesService
     def __init__(self, config: Config) -> None: ...

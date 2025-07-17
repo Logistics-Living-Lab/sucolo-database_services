@@ -46,15 +46,10 @@ class MultipleFeaturesService(BaseService):
         if query.city not in self.metadata_service.get_cities():
             raise CityNotFoundError(f"City {query.city} not found")
 
-        index = pd.Index(
-            self._es_service.read.get_hexagons(
-                index_name=query.city,
-                resolution=query.resolution,
-                features=[],
-                only_location=True,
-            ).keys()
+        hex_ids = self._redis_service.read.get_hexagons(
+            city=query.city, resolution=query.resolution
         )
-        df = pd.DataFrame(index=index)
+        df = pd.DataFrame(index=pd.Index(hex_ids))
 
         # Process nearest distances
         for subquery in query.nearest_queries:
