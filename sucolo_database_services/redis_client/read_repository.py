@@ -8,6 +8,10 @@ class RedisReadRepository:
     def __init__(self, redis_client: Redis):
         self.redis_client = redis_client
 
+    def key_exists(self, key: str) -> bool:
+        """Check if a key exists in Redis."""
+        return self.redis_client.exists(key) > 0  # type: ignore[operator]
+
     def get_hexagons(self, city: str, resolution: int) -> list[str]:
         hex_ids = [
             hex_id.decode("utf-8")

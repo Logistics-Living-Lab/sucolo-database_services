@@ -39,6 +39,10 @@ default_mapping = {
 }
 
 
+class IndexExistsError(Exception):
+    pass
+
+
 class ElasticsearchIndexManager:
     def __init__(
         self,
@@ -57,7 +61,7 @@ class ElasticsearchIndexManager:
             if ignore_if_exists:
                 print("Warning:", msg)
             else:
-                raise ValueError(msg)
+                raise IndexExistsError(msg)
         else:
             self.es.indices.create(index=index_name, body=mapping)
 

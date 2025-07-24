@@ -4,6 +4,7 @@ from typing import Any
 import geopandas as gpd
 
 from sucolo_database_services.elasticsearch_client.index_manager import (
+    IndexExistsError,
     default_mapping,
 )
 from sucolo_database_services.services.base_service import (
@@ -31,8 +32,13 @@ class _Upload(BaseService):
         """Upload complete city data including POIs, districts, and hexagons."""
         if isinstance(hex_resolutions, int):
             hex_resolutions = [hex_resolutions]
+        if len(hex_resolutions) == 0:
+            msg = "No hex resolutions provided for uploading city data."
+            self._logger.error(msg)
+            raise ValueError(msg)
+
+        self._logger.info(f'UPLOADING DATA FOR CITY "{city}" ...')
         try:
-            self._logger.info(f'UPLOADING DATA FOR CITY "{city}" ...')
             self._upload_city_data_elasticsearch(
                 city=city,
                 pois_gdf=pois_gdf,
@@ -41,20 +47,35 @@ class _Upload(BaseService):
                 ignore_if_index_exists=ignore_if_index_exists,
                 es_index_mapping=es_index_mapping,
             )
+        except IndexExistsError as e:
+            if ignore_if_index_exists:
+                self._logger.warning(
+                    f"Index for city {city} already exists. "
+                    "Skipping Elasticsearch upload."
+                )
+            else:
+                self._logger.error(
+                    f"Error uploading city data for {city}: {str(e)}"
+                )
+                raise e
+        except Exception as e:
+            self._logger.error(
+                f"Error uploading city data for {city}: " f"{str(e)}"
+            )
+            raise e
+
+        try:
             self._upload_city_data_redis(
                 city=city,
                 pois_gdf=pois_gdf,
                 district_gdf=district_gdf,
                 hex_resolutions=hex_resolutions,
             )
-            self._logger.info(
-                f"Successfully uploaded all data for city {city}."
-            )
         except Exception as e:
             self._logger.error(
                 f"Error uploading city data for {city}: " f"{str(e)}"
             )
-            raise
+            raise e
 
     def _upload_city_data_elasticsearch(
         self,
@@ -104,25 +125,34 @@ class _Upload(BaseService):
     ) -> None:
         """Upload city data to Redis (POIs, wheelchair POIs, hexagons)."""
         self._logger.info(f'Creating keys for city "{city}" in redis.')
-        self._redis_service.write.upload_pois_by_amenity_key(
+        responses = self._redis_service.write.upload_pois_by_amenity_key(
             city=city, pois=pois_gdf
         )
-        self._logger.info("PoIs uploaded to redis.")
-        self._redis_service.write.upload_pois_by_amenity_key(
+        self._logger.info(f"{sum(responses)} new PoIs uploaded to redis.")
+        responses = self._redis_service.write.upload_pois_by_amenity_key(
             city=city,
             pois=pois_gdf,
             only_wheelchair_accessible=True,
             wheelchair_positive_values=["yes"],
         )
-        self._logger.info("Wheelchair accessible PoIs uploaded to redis.")
+        self._logger.info(
+            f"{sum(responses)} new wheelchair "
+            "accessible PoIs uploaded to redis."
+        )
+
         for hex_resolution in hex_resolutions:
             self._logger.info(
                 "Uploading hexagons to redis "
                 f"with resolution {hex_resolution}."
             )
-            self._redis_service.write.upload_hex_centers(
+            response = self._redis_service.write.upload_hex_centers(
                 city=city, districts=district_gdf, resolution=hex_resolution
             )
+            if isinstance(response, bool) and response is False:
+                self._logger.warning(
+                    f"Hexagons with resolution {hex_resolution} "
+                    f"for city {city} already exist in redis."
+                )
         self._logger.info("Hexagons uploaded to redis.")
 
     def upload_city_data_from_files(

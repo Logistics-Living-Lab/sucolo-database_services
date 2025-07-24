@@ -1,6 +1,6 @@
 import pandas as pd
 
-from sucolo_database_services.redis_client.consts import POIS_SUFFIX
+from sucolo_database_services.redis_client.consts import HEX_SUFFIX, POIS_SUFFIX
 from sucolo_database_services.services.base_service import (
     BaseService,
     BaseServiceDependencies,
@@ -60,3 +60,22 @@ class MetadataService(BaseService):
         df = df.dropna()  # get features only available for all districts
         district_attributes = list(df.columns)
         return district_attributes
+
+    def get_existing_resolutions(self, city: str) -> list[int]:
+        """Get list of all existing resolutions for a given city."""
+
+        city_keys = self._redis_service.keys_manager.get_city_keys(city)
+        hex_keys = list(
+            filter(
+                lambda key: key.startswith(f"{city}_")
+                and key.endswith(HEX_SUFFIX),
+                city_keys,
+            )
+        )
+        resolutions = list(
+            map(
+                lambda key: int(key[len(city) + 1 : -len(HEX_SUFFIX)]),
+                hex_keys,
+            )
+        )
+        return sorted(resolutions)

@@ -28,20 +28,28 @@ class RedisWriteRepository:
 
         # Upload pois for each amenity separately
         for amenity in pois["amenity"].unique():
+            key_name = city + "_" + amenity + wheelchair_suffix + POIS_SUFFIX
+            if self.redis_client.exists(key_name):
+                continue
             pois[pois["amenity"] == amenity].apply(
                 lambda row: pipe.geoadd(
-                    city + "_" + amenity + wheelchair_suffix + POIS_SUFFIX,
+                    key_name,
                     [row["geometry"].x, row["geometry"].y, row.name],
                 ),
                 axis=1,
             )
 
+        if len(pipe.command_stack) == 0:
+            return []
         responses = pipe.execute()
         return responses
 
     def upload_hex_centers(
         self, city: str, districts: gpd.GeoDataFrame, resolution: int = 9
-    ) -> ResponseT:
+    ) -> ResponseT | bool:
+        key_name = f"{city}_{resolution}{HEX_SUFFIX}"
+        if self.redis_client.exists(key_name):
+            return False
         hex_centers = polygons2hexagons(districts, resolution=resolution)
         assert len(hex_centers) > 0, "No hexagons were returned."
 
@@ -50,9 +58,7 @@ class RedisWriteRepository:
             for hex_id, hex_center in district_hex_centers:
                 values += [hex_center.x, hex_center.y, hex_id]
 
-        response = self.redis_client.geoadd(
-            f"{city}_{resolution}{HEX_SUFFIX}", values
-        )
+        response = self.redis_client.geoadd(key_name, values)
         return response
 
 
