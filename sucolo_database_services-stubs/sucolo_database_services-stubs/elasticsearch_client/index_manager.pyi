@@ -12,7 +12,6 @@ class ElasticsearchIndexManager:
     def create_index(
         self,
         index_name: str,
-        ignore_if_exists: bool = False,
         mapping: dict[str, Any] = ...,
     ) -> None: ...
 

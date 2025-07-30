@@ -44,7 +44,6 @@ class _Upload(BaseService):
                 pois_gdf=pois_gdf,
                 district_gdf=district_gdf,
                 hex_resolutions=hex_resolutions,
-                ignore_if_index_exists=ignore_if_index_exists,
                 es_index_mapping=es_index_mapping,
             )
         except IndexExistsError as e:
@@ -83,7 +82,6 @@ class _Upload(BaseService):
         pois_gdf: gpd.GeoDataFrame,
         district_gdf: gpd.GeoDataFrame,
         hex_resolutions: list[int],
-        ignore_if_index_exists: bool,
         es_index_mapping: dict[str, Any],
     ) -> None:
         """Upload city data to Elasticsearch
@@ -91,7 +89,6 @@ class _Upload(BaseService):
         self._logger.info(f'Creating index "{city}" in elasticsearch.')
         self._es_service.index_manager.create_index(
             index_name=city,
-            ignore_if_exists=ignore_if_index_exists,
             mapping=es_index_mapping,
         )
         self._logger.info(f'Index "{city}" created in elasticsearch.')

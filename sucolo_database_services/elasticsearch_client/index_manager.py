@@ -53,15 +53,10 @@ class ElasticsearchIndexManager:
     def create_index(
         self,
         index_name: str,
-        ignore_if_exists: bool = False,
         mapping: dict[str, Any] = default_mapping,
     ) -> None:
         if self.es.indices.exists(index=index_name):
-            msg = f'Index "{index_name}" already exists.'
-            if ignore_if_exists:
-                print("Warning:", msg)
-            else:
-                raise IndexExistsError(msg)
+            raise IndexExistsError(f'Index "{index_name}" already exists.')
         else:
             self.es.indices.create(index=index_name, body=mapping)
 
