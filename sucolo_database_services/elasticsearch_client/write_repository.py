@@ -50,7 +50,7 @@ class ElasticsearchWriteRepository:
             gdf (gpd.GeoDataFrame): GeoDataFrame containing district polygons
         """
         gdf["polygon"] = gdf["geometry"].apply(lambda g: g.wkt)
-        gdf = gdf[["district", "polygon"]]
+        gdf = gdf.drop(columns=["id", "geometry"])
 
         print(f"Prepared {len(gdf)} documents for upload")
 
@@ -60,7 +60,10 @@ class ElasticsearchWriteRepository:
                     self.es.index(
                         index=index_name,
                         id=row["district"],
-                        document=row.to_dict(),
+                        document={
+                            "type": "district",
+                            **row.drop("district").to_dict(),
+                        },
                     )
                     if i % 10 == 0:  # Log progress every 10 documents
                         print(f"Uploaded {i+1}/{len(gdf)} districts")
