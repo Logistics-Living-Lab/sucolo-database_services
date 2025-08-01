@@ -62,7 +62,7 @@ class ElasticsearchWriteRepository:
                         id=row["district"],
                         document={
                             "type": "district",
-                            **row.drop("district").to_dict(),
+                            **row.to_dict(),
                         },
                     )
                     if i % 10 == 0:  # Log progress every 10 documents
