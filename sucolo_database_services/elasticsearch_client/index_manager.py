@@ -4,6 +4,11 @@ from elasticsearch import Elasticsearch
 
 # Define index mapping
 default_mapping = {
+    "settings": {
+        #higher than defaults: total_fields limit usually 1000 and nested objects 10000
+        "index.mapping.total_fields.limit": 10000,
+        "index.mapping.nested_objects.limit": 50000,
+    },
     "mappings": {
         "properties": {
             # Shared properties
