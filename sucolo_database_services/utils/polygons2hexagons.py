@@ -18,10 +18,11 @@ def polygons2hexagons(
 
     return district_hexagons
 
-
+#builds holes as a flattened list of points, not a list-of-rings - corrected
 def _shapely_to_latlngpoly(geometry: Polygon) -> h3.LatLngPoly:
     exterior = [(lon, lat) for lon, lat in geometry.exterior.coords]
     holes = [
-        (lon, lat) for hole in geometry.interiors for lon, lat in hole.coords
+        #(lon, lat) for hole in geometry.interiors for lon, lat in hole.coords
+        [(lon, lat) for lon, lat in hole.coords] for hole in geometry.interiors
     ]
     return h3.LatLngPoly(exterior, holes)
